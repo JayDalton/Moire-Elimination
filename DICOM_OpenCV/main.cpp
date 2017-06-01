@@ -10,14 +10,14 @@ static void help(char* progName)
 		<< "This program demonstrated the use of the discrete Fourier transform (DFT). " << std::endl
 		<< "The dft of an image is taken and it's power spectrum is displayed." << std::endl
 		<< "Usage:" << std::endl
-		<< progName << " [image_name -- default 00001.jpg] " << std::endl << std::endl;
+		<< progName << " [image_name -- default Assets/0001.jpg] " << std::endl << std::endl;
 }
 
 int main(int argc, char ** argv)
 {
 	help(argv[0]);
 
-	const char* filename = argc >= 2 ? argv[1] : "0001.jpg";
+	const char* filename = argc >= 2 ? argv[1] : "Assets/0001.jpg";
 
 	cv::Mat I = cv::imread(filename, cv::IMREAD_GRAYSCALE);
 	if (I.empty()) { return -1; }
