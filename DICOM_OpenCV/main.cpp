@@ -50,7 +50,7 @@ void recenterDFT(cv::Mat& source)
 	swapMap.copyTo(q3);
 }
 
-void showDFT(cv::Mat& source) 
+void showDFT(std::string label, cv::Mat& source) 
 {
 	cv::Mat splitArray[2] = {cv::Mat::zeros(source.size(), CV_32F), cv::Mat::zeros(source.size(), CV_32F) };
 
@@ -66,30 +66,65 @@ void showDFT(cv::Mat& source)
 
 	cv::normalize(dftMagnitude, dftMagnitude, 0, 1, CV_MINMAX);
 
-	cv::imshow("DFT", dftMagnitude);
+	cv::imshow(label, dftMagnitude);
 
 	cv::waitKey();
 }
 
-void invertDFT(cv::Mat& source, cv::Mat& target) {
+void invertDFT(cv::Mat& source, cv::Mat& target) 
+{
+	cv::Mat inverse;
 
+	cv::dft(source, inverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+
+	target = inverse;
+}
+
+void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigmaX, float sigmaY, float amplitude = 1.0) 
+{
+	cv::Mat temp = cv::Mat(size, CV_32F);
+
+	for (int r = 0; r < size.height; r++)
+	{
+		for (int c = 0; c < size.width; c++)
+		{
+			float x = ((c - uX) * ((float)c - uX)) / (2.0f * sigmaX * sigmaX);
+			float y = ((r - uY) * ((float)r - uY)) / (2.0f * sigmaY * sigmaY);
+			float value = amplitude * exp(-(x + y));
+			temp.at<float>(r, c) = value;
+		}
+	}
+	cv::normalize(temp, temp, 0.0f, 1.0f, cv::NORM_MINMAX);
+	output = temp;
 }
 
 int main(int argc, char ** argv)
 {
-	cv::Mat original = cv::imread("Assets/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	//cv::Mat original = cv::imread("Assets/0001.jpg", CV_LOAD_IMAGE_GRAYSCALE);
 
-	cv::Mat originalFloat;
+	//cv::Mat originalFloat;
 
-	original.convertTo(originalFloat, CV_32FC1, 1.0 / 255.0);
+	//original.convertTo(originalFloat, CV_32FC1, 1.0 / 255.0);
 
-	cv::Mat dftOfOriginal;
+	//cv::Mat dftOfOriginal;
 
-	takeDFT(originalFloat, dftOfOriginal);
+	//takeDFT(originalFloat, dftOfOriginal);
 
-	recenterDFT(dftOfOriginal);
+	//recenterDFT(dftOfOriginal);
 
-	showDFT(dftOfOriginal);
+	//showDFT("DFT", dftOfOriginal);
+
+	//cv::Mat invertedDFT;
+
+	//invertDFT(dftOfOriginal, invertedDFT);
+
+	//showDFT("Inverted DFT", invertedDFT);
+
+	cv::Mat output;
+
+	createGaussian(cv::Size(256, 256), output, 256 / 2, 256 / 2, 10, 10);
+	cv::imshow("Gaussian", output);
+	cv::waitKey();
 }
 
 //int main(int argc, char ** argv)
