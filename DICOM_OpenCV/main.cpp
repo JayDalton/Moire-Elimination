@@ -1,5 +1,5 @@
 #include <opencv2/core.hpp>
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -98,34 +98,139 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 	output = temp;
 }
 
+void eliminateMoire(cv::Mat& image)
+{
+
+}
+
 int main(int argc, char ** argv)
 {
-	//cv::Mat original = cv::imread("Assets/0001.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-
-	//cv::Mat originalFloat;
-
-	//original.convertTo(originalFloat, CV_32FC1, 1.0 / 255.0);
-
-	//cv::Mat dftOfOriginal;
-
-	//takeDFT(originalFloat, dftOfOriginal);
-
-	//recenterDFT(dftOfOriginal);
-
-	//showDFT("DFT", dftOfOriginal);
-
-	//cv::Mat invertedDFT;
-
-	//invertDFT(dftOfOriginal, invertedDFT);
-
-	//showDFT("Inverted DFT", invertedDFT);
-
-	cv::Mat output;
-
-	createGaussian(cv::Size(256, 256), output, 256 / 2, 256 / 2, 10, 10);
-	cv::imshow("Gaussian", output);
+	cv::Mat image = cv::imread("Assets/0002.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	cv::imshow("Original", image);
+	cv::imwrite("c:/Temp/original.jpg", image);
 	cv::waitKey();
+
+	cv::Mat dftInput;
+	image.convertTo(dftInput, CV_32F);
+
+	cv::Mat dftImage;
+	cv::dft(dftInput, dftImage, cv::DFT_COMPLEX_OUTPUT);
+
+	//eliminateMoire(dftOfOriginal.size(), dftOfOriginal, 256 / 2, 256 / 2, 40, 40);
+
+	cv::Mat dftImageInverse;
+	cv::dft(dftImage, dftImageInverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+
+	cv::Mat convertedImage;
+	dftImageInverse.convertTo(convertedImage, CV_8U);
+	cv::imwrite("c:/Temp/result.jpg", convertedImage);
+	cv::imshow("Converted", convertedImage);
+	cv::waitKey();
+
+	return 0;
 }
+
+
+//#include "opencv2/highgui/highgui.hpp"
+//#include <iostream>
+//
+//using namespace std;
+//using namespace cv;
+
+//int main()
+//{
+//	// Read image from file
+//	// Make sure that the image is in grayscale
+//	Mat img = imread("lena.JPG", 0);
+//
+//	Mat planes[] = { Mat_<float>(img), Mat::zeros(img.size(), CV_32F) };
+//	Mat complexI;    //Complex plane to contain the DFT coefficients {[0]-Real,[1]-Img}
+//	merge(planes, 2, complexI);
+//	dft(complexI, complexI);  // Applying DFT
+//
+//							  // Reconstructing original imae from the DFT coefficients
+//	Mat invDFT, invDFTcvt;
+//	idft(complexI, invDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
+//	invDFT.convertTo(invDFTcvt, CV_8U);
+//	imshow("Output", invDFTcvt);
+//
+//	//show the image
+//	imshow("Original Image", img);
+//
+//	// Wait until user press some key
+//	waitKey(0);
+//	return 0;
+//}
+
+//#include "opencv2/highgui/highgui.hpp"
+//#include <iostream>
+//
+//using namespace std;
+//using namespace cv;
+//
+//int main()
+//{
+//	// Read image from file
+//	// Make sure that the image is in grayscale
+//	Mat img = imread("lena.JPG", 0);
+//
+//	Mat dftInput1, dftImage1, inverseDFT, inverseDFTconverted;
+//	img.convertTo(dftInput1, CV_32F);
+//	dft(dftInput1, dftImage1, DFT_COMPLEX_OUTPUT);    // Applying DFT
+//
+//													  // Reconstructing original imae from the DFT coefficients
+//	idft(dftImage1, inverseDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
+//	inverseDFT.convertTo(inverseDFTconverted, CV_8U);
+//	imshow("Output", inverseDFTconverted);
+//
+//	//show the image
+//	imshow("Original Image", img);
+//
+//	// Wait until user press some key
+//	waitKey(0);
+//	return 0;
+//}
+
+
+//int main(int argc, char ** argv)
+//{
+//	cv::Mat originalImage = cv::imread("Assets/0002.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+//	cv::imshow("Original", originalImage);
+//	cv::imwrite("c:/Temp/original.jpg", originalImage);
+//	cv::waitKey();
+//
+//	cv::Mat originalFloat;
+//	originalImage.convertTo(originalFloat, CV_32F/*, 1.0 / 255.0*/);
+//
+//	//cv::Mat dftOfOriginal;
+//	//takeDFT(originalFloat, dftOfOriginal);
+//	////recenterDFT(dftOfOriginal);
+//	//showDFT("Magnitude DFT", dftOfOriginal);
+//
+//	cv::Mat fourierImage;
+//	cv::dft(originalFloat, fourierImage, cv::DFT_COMPLEX_OUTPUT);
+//	
+//	//eliminateMoire(dftOfOriginal.size(), dftOfOriginal, 256 / 2, 256 / 2, 40, 40);
+//	//showDFT("Changed DFT", dftOfOriginal);
+//
+//	//cv::Mat invertedDFT;
+//	//invertDFT(dftOfOriginal, invertedDFT);
+//	//showDFT("Inverted DFT", invertedDFT);
+//
+//	cv::Mat inverseImage;
+//	cv::dft(fourierImage, inverseImage, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+//
+//	cv::Mat convertedImage;
+//	inverseImage.convertTo(convertedImage, CV_8U);
+//	cv::imwrite("c:/Temp/result.jpg", convertedImage);
+//
+//	//cv::Mat output;
+//	//createGaussian(cv::Size(256, 256), output, 256 / 2, 256 / 2, 20, 20);
+//	//cv::imshow("Gaussian", output);
+//	//cv::waitKey();
+//
+//	return 0;
+//}
 
 //int main(int argc, char ** argv)
 //{
