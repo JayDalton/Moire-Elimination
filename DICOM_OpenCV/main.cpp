@@ -1,6 +1,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
@@ -100,35 +101,151 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 
 void eliminateMoire(cv::Mat& image)
 {
+	CV_DbgAssert(image.depth() == CV_32F);
 
+	int chanels = image.channels();	// 2 - complex
+
+	int nRows = image.rows;
+	int nCols = image.cols/* * chanels*/;
+
+	double* p;
+	for (int i = 0; i < /*nRows*/1; i++)
+	{
+		p = image.ptr<double>(i);
+		for (int j = 0; j < nCols; j++)
+		{
+			std::cout << p[j] << ", ";
+			std::cout << std::endl;
+		}
+	}
 }
+
+void linewiseIterate(cv::Mat& image) 
+{
+	cv::Mat dftInput;
+	image.convertTo(dftInput, CV_32F);
+	cv::Mat one_row_in_frequency_domain;
+	for (int i = 0; i < 1/*dftInput.rows*/; i++)
+	{
+		cv::Mat one_row = dftInput.row(i);
+		cv::dft(one_row, one_row_in_frequency_domain, cv::DFT_COMPLEX_OUTPUT);
+
+		double* p = one_row_in_frequency_domain.ptr<double>(0);
+
+		for (size_t j = 0; j < one_row_in_frequency_domain.cols; j++)
+		{
+			std::cout << p[j] << ", ";
+		}
+		std::cout << std::endl;
+	}
+}
+
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/highgui.hpp"
+
+#include <iostream>
+
+using namespace cv;
+using namespace std;
 
 int main(int argc, char ** argv)
 {
-	cv::Mat image = cv::imread("Assets/0002.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-	cv::imshow("Original", image);
-	cv::imwrite("c:/Temp/original.jpg", image);
-	cv::waitKey();
+	help(argv[0]);
 
-	cv::Mat dftInput;
-	image.convertTo(dftInput, CV_32F);
+	const char* filename = argc >= 2 ? argv[1] : "Assets/0003.jpg";
 
-	cv::Mat dftImage;
-	cv::dft(dftInput, dftImage, cv::DFT_COMPLEX_OUTPUT);
+	Mat I = imread(filename, IMREAD_GRAYSCALE);
+	if (I.empty())
+		return -1;
 
-	//eliminateMoire(dftOfOriginal.size(), dftOfOriginal, 256 / 2, 256 / 2, 40, 40);
+	Mat padded;                            //expand input image to optimal size
+	int m = getOptimalDFTSize(I.rows);
+	int n = getOptimalDFTSize(I.cols); // on the border add zero values
+	copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
 
-	cv::Mat dftImageInverse;
-	cv::dft(dftImage, dftImageInverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
+	Mat complexI;
+	merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
 
-	cv::Mat convertedImage;
-	dftImageInverse.convertTo(convertedImage, CV_8U);
-	cv::imwrite("c:/Temp/result.jpg", convertedImage);
-	cv::imshow("Converted", convertedImage);
-	cv::waitKey();
+	dft(complexI, complexI);            // this way the result may fit in the source matrix
+
+										// compute the magnitude and switch to logarithmic scale
+										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+	split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+	magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
+	Mat magI = planes[0];
+
+	eliminateMoire(magI);
+
+	magI += Scalar::all(1);                    // switch to logarithmic scale
+	eliminateMoire(magI);
+	log(magI, magI);
+
+	eliminateMoire(magI);
+
+	// crop the spectrum, if it has an odd number of rows or columns
+	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
+
+	// rearrange the quadrants of Fourier image  so that the origin is at the image center
+	int cx = magI.cols / 2;
+	int cy = magI.rows / 2;
+
+	Mat q0(magI, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	Mat q1(magI, Rect(cx, 0, cx, cy));  // Top-Right
+	Mat q2(magI, Rect(0, cy, cx, cy));  // Bottom-Left
+	Mat q3(magI, Rect(cx, cy, cx, cy)); // Bottom-Right
+
+	Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	q0.copyTo(tmp);
+	q3.copyTo(q0);
+	tmp.copyTo(q3);
+
+	q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+	q2.copyTo(q1);
+	tmp.copyTo(q2);
+
+	normalize(magI, magI, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
+											  // viewable image form (float between values 0 and 1).
+
+	imshow("Input Image", I);    // Show the result
+	imshow("spectrum magnitude", magI);
+	waitKey();
 
 	return 0;
 }
+//int main(int argc, char ** argv)
+//{
+//	cv::Mat image = cv::imread("Assets/0003.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+//	cv::imshow("Original", image);
+//	cv::imwrite("c:/Temp/original.jpg", image);
+//	cv::waitKey();
+//
+//	cv::Mat dftInput;
+//	image.convertTo(dftInput, CV_32F);
+//
+//	double t = (double)cv::getTickCount();
+//
+//	cv::Mat dftImage;
+//	cv::dft(dftInput, dftImage, cv::DFT_COMPLEX_OUTPUT);
+//
+//	eliminateMoire(dftImage);
+//
+//	cv::Mat dftImageInverse;
+//	cv::dft(dftImage, dftImageInverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+//
+//	t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+//	std::cout << "Times passed in sec: " << t << std::endl;
+//
+//	cv::Mat convertedImage;
+//	dftImageInverse.convertTo(convertedImage, CV_8U);
+//	cv::imwrite("c:/Temp/result.jpg", convertedImage);
+//	cv::imshow("Converted", convertedImage);
+//	cv::waitKey();
+//
+//	return 0;
+//}
 
 
 //#include "opencv2/highgui/highgui.hpp"
