@@ -108,16 +108,23 @@ void eliminateMoire(cv::Mat& image)
 	int nRows = image.rows;
 	int nCols = image.cols/* * chanels*/;
 
-	double* p;
-	for (int i = 0; i < /*nRows*/1; i++)
+	std::ofstream logfile("c:/Temp/0000.log", std::ios::out | std::ios::app);
+	if (logfile.is_open())
 	{
-		p = image.ptr<double>(i);
-		for (int j = 0; j < nCols; j++)
+		double* p;
+		for (int i = 0; i < /*nRows*/1; i++)
 		{
-			std::cout << p[j] << ", ";
+			p = image.ptr<double>(i);
+			for (int j = 0; j < nCols; j++)
+			{
+				logfile << p[j] << "; ";
+			}
 			std::cout << std::endl;
 		}
+
+		logfile.close();
 	}
+
 }
 
 void linewiseIterate(cv::Mat& image) 
@@ -146,6 +153,7 @@ void linewiseIterate(cv::Mat& image)
 #include "opencv2/highgui.hpp"
 
 #include <iostream>
+#include <fstream>
 
 using namespace cv;
 using namespace std;
