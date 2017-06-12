@@ -11,9 +11,8 @@
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <canvas:CanvasControl 
             x:Name="GraphCanvas" 
-            MinHeight="300" Margin="10"
-            ClearColor="Black" 
+            Margin="5"
             Draw="OnDrawGraph" />
-
+        <Image x:Name="GreyImage" Stretch="None"/>
     </Grid>
 </Page>

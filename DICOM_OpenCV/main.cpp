@@ -6,6 +6,20 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 
+#include <iostream>
+#include <fstream>
+
+using namespace cv;
+using namespace std;
+
+struct PixelValues {
+	double AdftComplexRe;
+	double AdftComplexIm;
+	double Bmagnitude;
+	double Cscalar;
+	double Dlogarithm;
+};
+
 static void help(char* progName)
 {
 	std::cout << std::endl
@@ -103,29 +117,30 @@ void eliminateMoire(cv::Mat& image)
 {
 	CV_DbgAssert(image.depth() == CV_32F);
 
-	int chanels = image.channels();	// 2 - complex
+	int chanels = image.channels();	// 1 - grey, 2 - complex, 3 - rgb
 
 	int nRows = image.rows;
 	int nCols = image.cols/* * chanels*/;
 
-	std::ofstream logfile("c:/Temp/0000.log", std::ios::out | std::ios::app);
+	std::ofstream logfile("c:/Temp/0000.log", std::ios::out | std::ios::trunc);
 	if (logfile.is_open())
 	{
 		double* p;
-		for (int i = 0; i < /*nRows*/1; i++)
+		for (int i = 0; i < nRows; i++)
 		{
 			p = image.ptr<double>(i);
 			for (int j = 0; j < nCols; j++)
 			{
-				logfile << p[j] << "; ";
+				if (0 < j) logfile << ";";
+				logfile << p[j];
 			}
-			std::cout << std::endl;
+			logfile << std::endl;
 		}
 
 		logfile.close();
 	}
-
 }
+
 
 void linewiseIterate(cv::Mat& image) 
 {
@@ -147,79 +162,106 @@ void linewiseIterate(cv::Mat& image)
 	}
 }
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui.hpp"
+void showRawImage() 
+{
+	unsigned short IMG_ROWS = 4320;
+	unsigned short IMG_COLS = 4318;
+	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.raw";
 
-#include <iostream>
-#include <fstream>
+	std::ifstream fin(filename, std::ios::binary | std::ios::ate);
+	std::ifstream::pos_type pos = fin.tellg();
+	std::vector<unsigned short> result(pos / 2);	// 16 bits
+	fin.seekg(0, std::ios::beg);
+	fin.read(reinterpret_cast<char*>(&result[0]), pos);
+	//for (auto const& value : result)
+	//{
+		//std::cout << std::uppercase << std::hex << value << " ";
+	//}
+	fin.close();
 
-using namespace cv;
-using namespace std;
+	if (result.size() == IMG_ROWS * IMG_COLS)
+	{
+		std::cout << "Lesen funzt!";
+		cv::Mat image(IMG_ROWS, IMG_COLS, CV_16U, &result[0]);
+		imshow("RAW Image", image);
+
+		cv::Mat target;
+		cv::resize(image, target, cv::Size(600, 600), 0, 0, INTER_AREA);
+		imshow("Resize Image", target);
+		waitKey();
+	}
+}
+
+void showDcmImage() 
+{
+	unsigned short IMG_ROWS = 4320;
+	unsigned short IMG_COLS = 4318;
+	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.dcm";
+}
 
 int main(int argc, char ** argv)
 {
 	help(argv[0]);
 
-	const char* filename = argc >= 2 ? argv[1] : "Assets/0003.jpg";
+	showRawImage();
 
-	Mat I = imread(filename, IMREAD_GRAYSCALE);
-	if (I.empty())
-		return -1;
+	//const char* filename = argc >= 2 ? argv[1] : "Assets/0002.jpg";
 
-	Mat padded;                            //expand input image to optimal size
-	int m = getOptimalDFTSize(I.rows);
-	int n = getOptimalDFTSize(I.cols); // on the border add zero values
-	copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
+	//Mat I = imread(filename, IMREAD_GRAYSCALE);
+	//if (I.empty())
+	//	return -1;
 
-	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
-	Mat complexI;
-	merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
+	//std::vector<PixelValues> lineValues;
 
-	dft(complexI, complexI);            // this way the result may fit in the source matrix
+	//Mat padded;                            //expand input image to optimal size
+	//int m = getOptimalDFTSize(I.rows);
+	//int n = getOptimalDFTSize(I.cols); // on the border add zero values
+	//copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
 
-										// compute the magnitude and switch to logarithmic scale
-										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-	split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
-	magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
-	Mat magI = planes[0];
+	//Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
+	//Mat complexI;
+	//merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
 
-	eliminateMoire(magI);
+	//dft(complexI, complexI);            // this way the result may fit in the source matrix
 
-	magI += Scalar::all(1);                    // switch to logarithmic scale
-	eliminateMoire(magI);
-	log(magI, magI);
+	//									// compute the magnitude and switch to logarithmic scale
+	//									// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+	//split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+	//magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
+	//Mat magI = planes[0];
 
-	eliminateMoire(magI);
+	//magI += Scalar::all(1);                    // switch to logarithmic scale
+	//log(magI, magI);
 
-	// crop the spectrum, if it has an odd number of rows or columns
-	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
+	//eliminateMoire(magI);
 
-	// rearrange the quadrants of Fourier image  so that the origin is at the image center
-	int cx = magI.cols / 2;
-	int cy = magI.rows / 2;
+	//// crop the spectrum, if it has an odd number of rows or columns
+	//magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
 
-	Mat q0(magI, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-	Mat q1(magI, Rect(cx, 0, cx, cy));  // Top-Right
-	Mat q2(magI, Rect(0, cy, cx, cy));  // Bottom-Left
-	Mat q3(magI, Rect(cx, cy, cx, cy)); // Bottom-Right
+	//// rearrange the quadrants of Fourier image  so that the origin is at the image center
+	//int cx = magI.cols / 2;
+	//int cy = magI.rows / 2;
 
-	Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
-	q0.copyTo(tmp);
-	q3.copyTo(q0);
-	tmp.copyTo(q3);
+	//Mat q0(magI, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	//Mat q1(magI, Rect(cx, 0, cx, cy));  // Top-Right
+	//Mat q2(magI, Rect(0, cy, cx, cy));  // Bottom-Left
+	//Mat q3(magI, Rect(cx, cy, cx, cy)); // Bottom-Right
 
-	q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
-	q2.copyTo(q1);
-	tmp.copyTo(q2);
+	//Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	//q0.copyTo(tmp);
+	//q3.copyTo(q0);
+	//tmp.copyTo(q3);
 
-	normalize(magI, magI, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
-											  // viewable image form (float between values 0 and 1).
+	//q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+	//q2.copyTo(q1);
+	//tmp.copyTo(q2);
 
-	imshow("Input Image", I);    // Show the result
-	imshow("spectrum magnitude", magI);
-	waitKey();
+	//normalize(magI, magI, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
+	//										  // viewable image form (float between values 0 and 1).
+
+	//imshow("Input Image", I);    // Show the result
+	//imshow("spectrum magnitude", magI);
+	//waitKey();
 
 	return 0;
 }

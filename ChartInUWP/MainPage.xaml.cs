@@ -1,10 +1,13 @@
 ﻿using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Brushes;
+using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -13,6 +16,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.Imaging;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -21,6 +28,8 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using System.Collections.ObjectModel;
+using Windows.UI.Xaml.Media.Imaging;
 
 // Die Elementvorlage "Leere Seite" wird unter https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x407 dokumentiert.
 
@@ -31,471 +40,331 @@ namespace ChartInUWP
   /// </summary>
   public sealed partial class MainPage : Page
   {
+    private const float DataStrokeThickness = 1;
+    private readonly List<Dictionary<uint, double>> _data = new List<Dictionary<uint, double>>();
+    private readonly ChartRenderer _chartRenderer;
+
     public MainPage()
     {
       this.InitializeComponent();
-      Scenarios = new List<Scenario>();
+      _chartRenderer = new ChartRenderer();
+      RenderRawImage();
+      //ReadInputData();
     }
 
-    public List<Scenario> Scenarios { get; private set; }
+    private async Task RenderRawImage()
+    {
+      var picker = new FileOpenPicker();
+      picker.ViewMode = PickerViewMode.List;
+      picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+      picker.FileTypeFilter.Add(".raw");
+
+      StorageFile file = await picker.PickSingleFileAsync();
+      if (file != null)
+      {
+        using (var stream = await file.OpenAsync(FileAccessMode.Read))
+        {
+          var bytes = new byte[stream.Size];
+          await stream.ReadAsync(bytes.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
+
+          var softwareBitmap = new SoftwareBitmap(
+            BitmapPixelFormat.Gray16, 
+            4318, 4320);
+
+          softwareBitmap.CopyFromBuffer(bytes.AsBuffer());
+
+          if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
+              softwareBitmap.BitmapAlphaMode == BitmapAlphaMode.Straight)
+          {
+            softwareBitmap = SoftwareBitmap.Convert(
+              softwareBitmap, 
+              BitmapPixelFormat.Bgra8, 
+              BitmapAlphaMode.Premultiplied
+            );
+          }
+
+          var softwareBitmapeSource = new SoftwareBitmapSource();
+          await softwareBitmapeSource.SetBitmapAsync(softwareBitmap);
+          GreyImage.Source = softwareBitmapeSource;
+        } 
+      }
+    }
+
+    //public static Bitmap ByteToGrayBitmap(byte[] rawBytes, int width, int height)
+    //{
+    //  Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+    //  BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height),
+    //                                  ImageLockMode.WriteOnly, bitmap.PixelFormat);
+
+    //  Marshal.Copy(rawBytes, 0, bitmapData.Scan0, rawBytes.Length);
+    //  bitmap.UnlockBits(bitmapData);
+
+    //  for (int c = 0; c < bitmap.Palette.Entries.Length; c++)
+    //    bitmap.Palette.Entries[c] = Color.FromArgb(c, c, c);
+
+    //  return bitmap;
+    //}
+
+    private async Task ReadInputData()
+    {
+      var picker = new FileOpenPicker();
+      picker.ViewMode = PickerViewMode.List;
+      picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+      picker.FileTypeFilter.Add(".txt");
+      picker.FileTypeFilter.Add(".log");
+      picker.FileTypeFilter.Add(".dat");
+
+      StorageFile file = await picker.PickSingleFileAsync();
+      if (file != null)
+      {
+        var content = await FileIO.ReadLinesAsync(file);
+        foreach (var line in content)
+        {
+          var index = default(uint);
+          var fields = line.Split(';');
+          var values = new Dictionary<uint, double>();
+          foreach (var field in fields)
+          {
+            values.Add(index++, Convert.ToDouble(field, CultureInfo.InvariantCulture));
+          }
+          _data.Add(values);
+        }
+        if (_data.Count > 0)
+        {
+          GraphCanvas.Invalidate();
+        }
+      }
+    }
 
     private void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
-      var graphDrawer = new GraphDrawer((float)sender.ActualWidth, (float)sender.ActualHeight, Scenarios, e => e.CpuTimeInMs, "CPU");
-      graphDrawer.Draw(args.DrawingSession);
+      if (_data.Count > GraphCanvas.ActualWidth)
+      {
+        _data.RemoveRange(0, _data.Count - (int)GraphCanvas.ActualWidth);
+      }
+
+      args.DrawingSession.Clear(Colors.White);
+
+
+      if (_data.Count > 0)
+      {
+        var values = _data.First().Values.ToList();
+        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false);
+        _chartRenderer.RenderAxes(GraphCanvas, args);
+      }
     }
   }
 
-
-  public sealed class Scenario : INotifyPropertyChanged
+  class ChartRenderer
   {
-    public enum DrawMethod
+    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args)
     {
-      Win2DSpriteBatch,
-      CppWin2DSpriteBatch,
-      D2DSpriteBatch,
-      DrawImage
-    }
+      var width = (float)canvas.ActualWidth;
+      var height = (float)(canvas.ActualHeight);
+      var midWidth = (float)(width * .5);
+      var midHeight = (float)(height * .5);
 
-    public DrawMethod Method { get; private set; }
-    public CanvasSpriteSortMode SortMode { get; private set; }
-
-    public CanvasImageSource Image { get; private set; }
-
-    static Color[] colors =
-    {
-                Colors.Red,
-                Colors.Green,
-                Colors.Blue,
-                Colors.DarkGoldenrod,
-                Colors.Purple,
-                Colors.DarkOliveGreen
-            };
-
-    public SolidColorBrush Color
-    {
-      get
+      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
-        int index = (int)Method + (int)SortMode * Enum.GetValues(typeof(DrawMethod)).Length;
-        return new SolidColorBrush(colors[index % colors.Length]);
+        // Horizontal line
+        cpb.BeginFigure(new Vector2(0, midHeight));
+        cpb.AddLine(new Vector2(width, midHeight));
+        cpb.EndFigure(CanvasFigureLoop.Open);
+
+        // Horizontal line arrow
+        cpb.BeginFigure(new Vector2(width - 10, midHeight - 3));
+        cpb.AddLine(new Vector2(width, midHeight));
+        cpb.AddLine(new Vector2(width - 10, midHeight + 3));
+        cpb.EndFigure(CanvasFigureLoop.Open);
+
+        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
       }
+
+      args.DrawingSession.DrawText("0", 5, midHeight - 30, Colors.Gray);
+      args.DrawingSession.DrawText(canvas.ActualWidth.ToString(), width - 50, midHeight - 30, Colors.Gray);
+
+      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      {
+        // Vertical line
+        cpb.BeginFigure(new Vector2(midWidth, 0));
+        cpb.AddLine(new Vector2(midWidth, height));
+        cpb.EndFigure(CanvasFigureLoop.Open);
+
+        // Vertical line arrow
+        cpb.BeginFigure(new Vector2(midWidth - 3, 10));
+        cpb.AddLine(new Vector2(midWidth, 0));
+        cpb.AddLine(new Vector2(midWidth + 3, 10));
+        cpb.EndFigure(CanvasFigureLoop.Open);
+
+        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
+      }
+
+      args.DrawingSession.DrawText("0", midWidth + 5, height - 30, Colors.Gray);
+      args.DrawingSession.DrawText("1", midWidth + 5, 5, Colors.Gray);
     }
 
-    public string Name
+    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea)
     {
-      get
-      {
-        string n;
+      var maxY = data.Max();
+      var maxX = canvas.ActualWidth;
 
-        switch (Method)
+      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      {
+        cpb.BeginFigure(new Vector2(0, (float)(data[0] * canvas.ActualHeight / maxY)));
+
+        for (int i = 1; i < data.Count; i++)
         {
-          case DrawMethod.Win2DSpriteBatch: n = "C# Win2D"; break;
-          case DrawMethod.CppWin2DSpriteBatch: n = "C++ Win2D"; break;
-          case DrawMethod.D2DSpriteBatch: n = "C++ D2D"; break;
-          case DrawMethod.DrawImage: n = "C# DrawImage"; break;
-          default: throw new Exception();
+          cpb.AddLine(new Vector2(i, (float)(data[i] * canvas.ActualHeight / maxY)));
         }
 
-        if (SortMode == CanvasSpriteSortMode.Bitmap)
-          n = n + " (sorted)";
-
-        return n;
-      }
-    }
-
-    public string Summary
-    {
-      get
-      {
-        if (Data == null || Data.Count == 0)
-          return "no data";
-
-        return string.Format("CPU/GPU avg: {0:0.00}ms/{1:0.00}ms",
-            Data.Values.Select(e => e.CpuTimeInMs).Average(),
-            Data.Values.Where(e => e.GpuTimeInMs >= 0.0).Select(e => e.GpuTimeInMs).Average());
-      }
-    }
-
-    public Dictionary<int, CpuGpuTime> Data { get; private set; }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    public Scenario(DrawMethod method, CanvasSpriteSortMode sortMode)
-    {
-      Method = method;
-      SortMode = sortMode;
-      Reset();
-    }
-
-    //IScenarioRunner MakeScenarioRunner()
-    //{
-    //  switch (Method)
-    //  {
-    //    case DrawMethod.Win2DSpriteBatch:
-    //    case DrawMethod.DrawImage:
-    //      return new Win2DScenarioRunner(Method);
-
-    //    case DrawMethod.CppWin2DSpriteBatch:
-    //      return new CppWin2DScenarioRunner();
-
-    //    case DrawMethod.D2DSpriteBatch:
-    //      return new Direct2DScenarioRunner();
-
-    //    default:
-    //      throw new Exception();
-    //  }
-    //}
-
-    public struct CpuGpuTime
-    {
-      public double CpuTimeInMs;
-      public double GpuTimeInMs;
-    }
-
-    //internal async Task Go(CancellationToken cancellationToken, CanvasDevice device, ScenarioData scenarioData)
-    //{
-    //  var runner = MakeScenarioRunner();
-    //  scenarioData.AddDataToScenarioRunner(runner);
-
-    //  // Create the image source and the render target.  These sizes are hardcoded and independent of the 
-    //  // display's DPI since we just want a small image to convince ourselves that the scenarios really are 
-    //  // rendering the right thing.
-    //  Image = new CanvasImageSource(device, 128, 128, 96);
-
-    //  using (var rt = new CanvasRenderTarget(device, 128, 128, 96))
-    //  {
-    //    // We actually run the scenario on the thread pool - XAML really falls down if you overload the UI thread.
-    //    var time = await Task.Run(() =>
-    //    {
-    //      // Run the scenario multiple times to try and avoid too much noise
-    //      List<CpuGpuTime> times = new List<CpuGpuTime>();
-
-    //      for (int i = 0; i < 10; ++i)
-    //      {
-    //        // Hold the device lock while we run the scenario - this prevents other threads
-    //        // from interacting with the device and interfering with our recorded time.
-    //        using (var deviceLock = device.Lock())
-    //        {
-    //          times.Add(RunScenario(runner, rt));
-    //        }
-    //        if (cancellationToken.IsCancellationRequested)
-    //          return new CpuGpuTime();
-    //      }
-
-    //      var cpuTimes = from entry in times select entry.CpuTimeInMs;
-    //      var gpuTimes = from entry in times select entry.GpuTimeInMs;
-
-    //      return new CpuGpuTime
-    //      {
-    //        CpuTimeInMs = GetAverage(cpuTimes),
-    //        GpuTimeInMs = GetAverage(gpuTimes)
-    //      };
-    //    }, cancellationToken);
-
-    //    Data[scenarioData.Value] = time;
-
-    //    if (cancellationToken.IsCancellationRequested)
-    //      return;
-
-    //    using (var ds = Image.CreateDrawingSession(Colors.Transparent))
-    //    {
-    //      ds.DrawImage(rt);
-
-    //      var timing = string.Format("{0:0.00}ms\n{1:0.00}ms", time.CpuTimeInMs, time.GpuTimeInMs);
-    //      ds.DrawText(timing, 0, 0, Colors.White);
-    //      ds.DrawText(timing, 1, 1, Colors.Black);
-    //    }
-    //  }
-
-    //  if (PropertyChanged != null)
-    //  {
-    //    PropertyChanged(this, new PropertyChangedEventArgs("Image"));
-    //    PropertyChanged(this, new PropertyChangedEventArgs("Summary"));
-    //  }
-    //}
-
-    static double GetAverage(IEnumerable<double> times)
-    {
-      var list = times.ToList();
-
-      if (list.Count > 2)
-      {
-        // Return the median value
-        list.Sort();
-        if (list.Count % 2 == 0)
-          return list[list.Count / 2];
-        else
-          return list.GetRange(list.Count / 2, 2).Average();
-      }
-      else
-      {
-        return list.Average();
-      }
-    }
-
-    //CpuGpuTime RunScenario(IScenarioRunner runner, CanvasRenderTarget rt)
-    //{
-    //  while (true)
-    //  {
-    //    Stopwatch stopWatch = new Stopwatch();
-
-    //    using (GpuStopWatch gpuStopWatch = new GpuStopWatch(rt.Device))
-    //    {
-
-    //      gpuStopWatch.Start();
-    //      stopWatch.Start();
-
-    //      using (var ds = rt.CreateDrawingSession())
-    //      {
-    //        ds.Clear(Colors.Black);
-    //        runner.RunScenario(ds, SortMode);
-    //      }
-
-    //      stopWatch.Stop();
-    //      gpuStopWatch.Stop();
-
-    //      var gpuTime = gpuStopWatch.GetGpuTimeInMs();
-    //      if (gpuTime < 0)
-    //      {
-    //        // try again until we get a time that isn't disjoint
-    //        continue;
-    //      }
-
-    //      return new CpuGpuTime
-    //      {
-    //        CpuTimeInMs = stopWatch.Elapsed.TotalMilliseconds,
-    //        GpuTimeInMs = gpuTime
-    //      };
-    //    }
-    //  }
-    //}
-
-    public void Reset()
-    {
-      Data = new Dictionary<int, CpuGpuTime>();
-      if (PropertyChanged != null)
-        PropertyChanged(this, new PropertyChangedEventArgs("Summary"));
-    }
-
-    public void PopulateWithThumbnailData()
-    {
-      Reset();
-
-      int seed = (int)Method + (int)SortMode * Enum.GetValues(typeof(DrawMethod)).Length;
-
-      var rnd = new Random(seed);
-
-      double scale = rnd.NextDouble() * 30;
-      double jitter = 10;
-
-      for (int i = 0; i < 100; ++i)
-      {
-        Data.Add(i * 100, new CpuGpuTime()
+        if (renderArea)
         {
-          CpuTimeInMs = (i / 100.0) * scale + rnd.NextDouble() * jitter,
-          GpuTimeInMs = (i / 100.0) * scale + rnd.NextDouble() * jitter
-        });
+          cpb.AddLine(new Vector2(data.Count, (float)canvas.ActualHeight));
+          cpb.AddLine(new Vector2(0, (float)canvas.ActualHeight));
+          cpb.EndFigure(CanvasFigureLoop.Closed);
+          args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), Colors.LightGreen);
+        }
+        else
+        {
+          cpb.EndFigure(CanvasFigureLoop.Open);
+          args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
+        }
+      }
+    }
+
+    public void RenderAveragesAsColumns(CanvasControl canvas, CanvasDrawEventArgs args, int columnAvgDataRange, float columnWidth, List<double> data)
+    {
+      var padding = .5 * (columnAvgDataRange - columnWidth);
+      for (int start = 0; start < data.Count; start += columnAvgDataRange)
+      {
+        double total = 0;
+        var range = Math.Min(columnAvgDataRange, data.Count - start);
+
+        for (int i = start; i < start + range; i++)
+        {
+          total += data[i];
+        }
+
+        args.DrawingSession.FillRectangle(
+            start + (float)padding,
+            (float)(canvas.ActualHeight * (1 - total / range)),
+            columnWidth,
+            (float)(canvas.ActualHeight * (total / range)),
+            Colors.WhiteSmoke);
+      }
+    }
+
+    public void RenderAveragesAsPieChart(CanvasControl canvas, CanvasDrawEventArgs args, List<double> pieValues, List<Color> palette)
+    {
+      var total = pieValues.Sum();
+
+      var w = (float)canvas.ActualWidth;
+      var h = (float)canvas.ActualHeight;
+      var midx = w / 2;
+      var midy = h / 2;
+      var padding = 50;
+      var lineOffset = 20;
+      var r = Math.Min(w, h) / 2 - padding;
+
+      float angle = 0f;
+      var center = new Vector2(midx, midy);
+
+      for (int i = 0; i < pieValues.Count; i++)
+      {
+        float sweepAngle = (float)(2 * Math.PI * pieValues[i] / total);
+        var arcStartPoint = new Vector2((float)(midx + r * Math.Sin(angle)), (float)(midy - r * Math.Cos(angle)));
+
+        using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+        {
+          cpb.BeginFigure(center);
+          cpb.AddLine(arcStartPoint);
+          cpb.AddArc(new Vector2(midx, midy), r, r, angle - (float)(Math.PI / 2), sweepAngle);
+          cpb.EndFigure(CanvasFigureLoop.Closed);
+          args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), palette[i % palette.Count]);
+        }
+
+        angle += sweepAngle;
+      }
+
+      angle = 0f;
+
+      var lineBrush = new CanvasSolidColorBrush(args.DrawingSession, Colors.Black);
+
+      for (int i = 0; i < pieValues.Count; i++)
+      {
+        float sweepAngle = (float)(2 * Math.PI * pieValues[i] / total);
+        var midAngle = angle + sweepAngle / 2;
+        var isRightHalf = midAngle < Math.PI;
+        var isTopHalf = midAngle <= Math.PI / 2 || midAngle >= Math.PI * 3 / 2;
+        var p0 = new Vector2((float)(midx + (r - lineOffset) * Math.Sin(midAngle)), (float)(midy - (r - lineOffset) * Math.Cos(midAngle)));
+        var p1 = new Vector2((float)(midx + (r + lineOffset) * Math.Sin(midAngle)), (float)(midy - (r + lineOffset) * Math.Cos(midAngle)));
+        var p2 = isRightHalf ? new Vector2(p1.X + 50, p1.Y) : new Vector2(p1.X - 50, p1.Y);
+
+        using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+        {
+          cpb.BeginFigure(p0);
+          cpb.AddLine(p1);
+          cpb.AddLine(p2);
+          cpb.EndFigure(CanvasFigureLoop.Open);
+
+          args.DrawingSession.DrawGeometry(
+              CanvasGeometry.CreatePath(cpb),
+              lineBrush,
+              1);
+        }
+
+        args.DrawingSession.DrawText(
+            pieValues[i].ToString("F2"),
+            p1,
+            Colors.Black,
+            new CanvasTextFormat
+            {
+              HorizontalAlignment = isRightHalf ? CanvasHorizontalAlignment.Left : CanvasHorizontalAlignment.Right,
+              VerticalAlignment = isTopHalf ? CanvasVerticalAlignment.Bottom : CanvasVerticalAlignment.Top,
+              FontSize = 18
+            });
+
+        angle += sweepAngle;
+      }
+    }
+
+    public void RenderMovingAverage(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, int movingAverageRange, List<double> data)
+    {
+      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      {
+        cpb.BeginFigure(new Vector2(0, (float)(canvas.ActualHeight * (1 - data[0]))));
+
+        double total = data[0];
+
+        int previousRangeLeft = 0;
+        int previousRangeRight = 0;
+
+        for (int i = 1; i < data.Count; i++)
+        {
+          var range = Math.Max(0, Math.Min(movingAverageRange / 2, Math.Min(i, data.Count - 1 - i)));
+          int rangeLeft = i - range;
+          int rangeRight = i + range;
+
+          for (int j = previousRangeLeft; j < rangeLeft; j++)
+          {
+            total -= data[j];
+          }
+
+          for (int j = previousRangeRight + 1; j <= rangeRight; j++)
+          {
+            total += data[j];
+          }
+
+          previousRangeLeft = rangeLeft;
+          previousRangeRight = rangeRight;
+
+          cpb.AddLine(new Vector2(i, (float)(canvas.ActualHeight * (1 - total / (range * 2 + 1)))));
+        }
+
+        cpb.EndFigure(CanvasFigureLoop.Open);
+
+        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
       }
     }
   }
-
-  class GraphDrawer
-  {
-    float actualHeight;
-    float actualWidth;
-    List<Scenario> scenarios;
-    Func<Scenario.CpuGpuTime, double> selector;
-    string title;
-
-    float maxXValue;
-    float maxYValue;
-
-    Vector2 origin;
-    Vector2 xAxisEnd;
-    Vector2 yAxisEnd;
-
-    public GraphDrawer(float actualWidth, float actualHeight, List<Scenario> scenarios, Func<Scenario.CpuGpuTime, double> selector, string title)
-    {
-      this.actualWidth = actualWidth;
-      this.actualHeight = actualHeight;
-      this.scenarios = scenarios;
-      this.selector = selector;
-      this.title = title;
-
-      maxXValue = (float)(Math.Ceiling(FindMaxCount() / 100) * 100); // round to next 100
-      maxYValue = (float)(Math.Ceiling(FindMaxTime() / 2) * 2); // round to next 2
-    }
-
-    CanvasTextFormat axisFormat = new CanvasTextFormat()
-    {
-      FontSize = 12,
-      HorizontalAlignment = CanvasHorizontalAlignment.Right,
-      VerticalAlignment = CanvasVerticalAlignment.Center
-    };
-
-    public void Draw(CanvasDrawingSession ds)
-    {
-      var widestLayoutRect = new CanvasTextLayout(ds, string.Format("{0}\t", maxYValue.ToString()), axisFormat, 500, 100).LayoutBounds;
-
-      origin = new Vector2((float)widestLayoutRect.Width, actualHeight - (float)widestLayoutRect.Height);
-      yAxisEnd = new Vector2(origin.X, (float)widestLayoutRect.Height);
-      xAxisEnd = new Vector2(actualWidth, origin.Y);
-
-      foreach (var scenario in scenarios)
-      {
-        DrawSeries(ds, scenario);
-      }
-
-      DrawAxes(ds);
-
-      ds.DrawText(title, new Vector2(origin.X + 10, 10), Colors.White);
-    }
-
-    private void DrawSeries(CanvasDrawingSession ds, Scenario scenario)
-    {
-      var data = scenario.Data;
-
-      var lastPoint = origin;
-      var color = scenario.Color.Color;
-
-      foreach (var key in data.Keys.OrderBy(k => k))
-      {
-        var point = new Vector2(GetX(key), GetY((float)selector(data[key])));
-
-        ds.DrawLine(lastPoint, point, color, 2);
-
-        lastPoint = point;
-      }
-    }
-
-    private void DrawAxes(CanvasDrawingSession ds)
-    {
-      ds.DrawLine(origin, xAxisEnd, Colors.White, 1);
-      ds.DrawLine(origin, yAxisEnd, Colors.White, 1);
-
-      for (int i = 0; i <= 9; ++i)
-      {
-        float y = (maxYValue / 9.0f) * (float)i;
-
-        ds.DrawText(string.Format("{0}", (int)y), new Vector2(origin.X - 5, GetY(y)), Colors.White, axisFormat);
-      }
-
-      axisFormat.VerticalAlignment = CanvasVerticalAlignment.Top;
-
-      for (int i = 0; i <= 9; ++i)
-      {
-        float x = (maxXValue / 9.0f) * (float)i;
-
-        ds.DrawText(string.Format("{0}", (int)x), new Vector2(GetX(x), origin.Y), Colors.White, axisFormat);
-      }
-    }
-
-    double FindMaxTime()
-    {
-      double maxTime = 0;
-
-      foreach (var scenario in scenarios)
-      {
-        if (scenario.Data.Count > 0)
-          maxTime = Math.Max(maxTime, scenario.Data.Values.Select(selector).Max());
-      }
-
-      return maxTime;
-    }
-
-    float FindMaxCount()
-    {
-      float maxCount = 0;
-
-      foreach (var scenario in scenarios)
-      {
-        if (scenario.Data.Count > 0)
-          maxCount = Math.Max(maxCount, scenario.Data.Keys.Max());
-      }
-
-      return maxCount;
-    }
-
-    float GetY(float value)
-    {
-      return Vector2.Lerp(origin, yAxisEnd, (value / maxYValue)).Y;
-    }
-
-    float GetX(float value)
-    {
-      return Vector2.Lerp(origin, xAxisEnd, (value / maxXValue)).X;
-    }
-  }
-
-  //internal class ScenarioData : IDisposable
-  //{
-  //  public int DrawCount { get; private set; }
-  //  public int BitmapCount { get; private set; }
-  //  public int Value { get; private set; }
-
-  //  public struct DrawInfo
-  //  {
-  //    public CanvasBitmap Bitmap;
-  //    public Vector4 Tint;
-  //    public Vector2 Position;
-  //    public float Rotation;
-  //  }
-
-  //  List<DrawInfo> drawInfo;
-
-  //  public ScenarioData(CanvasDevice device, int drawCount, int bitmapCount, int value)
-  //  {
-  //    DrawCount = drawCount;
-  //    BitmapCount = bitmapCount;
-  //    Value = value;
-
-  //    var bitmaps = new List<CanvasBitmap>();
-  //    for (int i = 0; i < bitmapCount; ++i)
-  //    {
-  //      var bitmap = new CanvasRenderTarget(device, 32, 32, 96);
-  //      using (var ds = bitmap.CreateDrawingSession())
-  //      {
-  //        ds.FillCircle(16, 16, 16, Colors.White);
-  //        ds.DrawText(i.ToString(), new Rect(0, 0, 32, 32), Colors.Black,
-  //            new CanvasTextFormat()
-  //            {
-  //              FontFamily = "Comic Sans MS",
-  //              HorizontalAlignment = CanvasHorizontalAlignment.Center,
-  //              VerticalAlignment = CanvasVerticalAlignment.Center
-  //            });
-  //      }
-  //      bitmaps.Add(bitmap);
-  //    }
-
-  //    var rng = new Random();
-
-  //    drawInfo = new List<DrawInfo>();
-  //    for (int i = 0; i < drawCount; ++i)
-  //    {
-  //      drawInfo.Add(new DrawInfo()
-  //      {
-  //        Bitmap = bitmaps[i % bitmaps.Count],
-  //        Position = new Vector2(64.0f + (float)Math.Sin(i * 0.1) * 16, 64.0f + (float)Math.Cos(i * 0.1) * 16),
-  //        Rotation = (float)(i * 0.3),
-  //        Tint = new Vector4((float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble())
-  //      });
-  //    }
-  //  }
-
-  //  public void Dispose()
-  //  {
-  //    foreach (var d in drawInfo)
-  //    {
-  //      d.Bitmap.Dispose();
-  //    }
-  //  }
-
-  //  public void AddDataToScenarioRunner(IScenarioRunner runner)
-  //  {
-  //    foreach (var d in drawInfo)
-  //    {
-  //      runner.AddSprite(d.Bitmap, d.Tint, d.Position, d.Rotation);
-  //    }
-  //  }
-  //}
 }
