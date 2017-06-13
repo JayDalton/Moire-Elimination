@@ -41,19 +41,25 @@ namespace ChartInUWP
   public sealed partial class MainPage : Page
   {
     private const float DataStrokeThickness = 1;
-    private readonly List<Dictionary<uint, double>> _data = new List<Dictionary<uint, double>>();
+    private readonly Dictionary<int, List<double>> _data;
     private readonly ChartRenderer _chartRenderer;
+
+    int MovingHorizontalValue = default(int);
+    int MovingVerticalValue = default(int);
 
     public MainPage()
     {
       this.InitializeComponent();
+      _data = new Dictionary<int, List<double>>();
       _chartRenderer = new ChartRenderer();
       RenderRawImage();
-      //ReadInputData();
+      ReadInputData();
     }
 
     private async Task RenderRawImage()
     {
+      const int WIDTH = 4318;
+      const int HEIGHT = 4320;
       var picker = new FileOpenPicker();
       picker.ViewMode = PickerViewMode.List;
       picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
@@ -66,11 +72,7 @@ namespace ChartInUWP
         {
           var bytes = new byte[stream.Size];
           await stream.ReadAsync(bytes.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
-
-          var softwareBitmap = new SoftwareBitmap(
-            BitmapPixelFormat.Gray16, 
-            4318, 4320);
-
+          var softwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Gray16, WIDTH, HEIGHT);
           softwareBitmap.CopyFromBuffer(bytes.AsBuffer());
 
           if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
@@ -90,21 +92,6 @@ namespace ChartInUWP
       }
     }
 
-    //public static Bitmap ByteToGrayBitmap(byte[] rawBytes, int width, int height)
-    //{
-    //  Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
-    //  BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height),
-    //                                  ImageLockMode.WriteOnly, bitmap.PixelFormat);
-
-    //  Marshal.Copy(rawBytes, 0, bitmapData.Scan0, rawBytes.Length);
-    //  bitmap.UnlockBits(bitmapData);
-
-    //  for (int c = 0; c < bitmap.Palette.Entries.Length; c++)
-    //    bitmap.Palette.Entries[c] = Color.FromArgb(c, c, c);
-
-    //  return bitmap;
-    //}
-
     private async Task ReadInputData()
     {
       var picker = new FileOpenPicker();
@@ -117,20 +104,24 @@ namespace ChartInUWP
       StorageFile file = await picker.PickSingleFileAsync();
       if (file != null)
       {
+        var rows = default(int);
         var content = await FileIO.ReadLinesAsync(file);
         foreach (var line in content)
         {
-          var index = default(uint);
           var fields = line.Split(';');
-          var values = new Dictionary<uint, double>();
+          var values = new List<double>();
           foreach (var field in fields)
           {
-            values.Add(index++, Convert.ToDouble(field, CultureInfo.InvariantCulture));
+            values.Add(Convert.ToDouble(field, CultureInfo.InvariantCulture));
           }
-          _data.Add(values);
+          _data.Add(rows++, values);
         }
         if (_data.Count > 0)
         {
+          MovingHorizontalSlider.Minimum = 0;
+          MovingHorizontalSlider.Maximum = _data[0].Count;
+          MovingVerticalSlider.Minimum = 0;
+          MovingVerticalSlider.Maximum = _data.Count;
           GraphCanvas.Invalidate();
         }
       }
@@ -138,20 +129,27 @@ namespace ChartInUWP
 
     private void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
-      if (_data.Count > GraphCanvas.ActualWidth)
-      {
-        _data.RemoveRange(0, _data.Count - (int)GraphCanvas.ActualWidth);
-      }
-
       args.DrawingSession.Clear(Colors.White);
-
-
-      if (_data.Count > 0)
+      if (_data.ContainsKey(MovingVerticalValue))
       {
-        var values = _data.First().Values.ToList();
+        int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
+        int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
+        var values = _data[MovingVerticalValue].GetRange(index, count);
         _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false);
         _chartRenderer.RenderAxes(GraphCanvas, args);
       }
+    }
+
+    private void MovingHorizontalSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+      MovingHorizontalValue = (int)e.NewValue;
+      GraphCanvas.Invalidate();
+    }
+
+    private void MovingVerticalSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+      MovingVerticalValue = (int)e.NewValue;
+      GraphCanvas.Invalidate();
     }
   }
 
@@ -205,6 +203,8 @@ namespace ChartInUWP
 
     public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea)
     {
+      if (data.Count == 0) return;
+
       var maxY = data.Max();
       var maxX = canvas.ActualWidth;
 

@@ -141,7 +141,6 @@ void eliminateMoire(cv::Mat& image)
 	}
 }
 
-
 void linewiseIterate(cv::Mat& image) 
 {
 	cv::Mat dftInput;
@@ -173,27 +172,29 @@ void showRawImage()
 	std::vector<unsigned short> result(pos / 2);	// 16 bits
 	fin.seekg(0, std::ios::beg);
 	fin.read(reinterpret_cast<char*>(&result[0]), pos);
-	//for (auto const& value : result)
-	//{
-		//std::cout << std::uppercase << std::hex << value << " ";
-	//}
 	fin.close();
 
 	if (result.size() == IMG_ROWS * IMG_COLS)
 	{
-		std::cout << "Lesen funzt!";
 		cv::Mat image(IMG_ROWS, IMG_COLS, CV_16U, &result[0]);
-		imshow("RAW Image", image);
+		cv::imshow("RAW Image", image);
 
 		cv::Mat target;
 		cv::resize(image, target, cv::Size(600, 600), 0, 0, INTER_AREA);
-		imshow("Resize Image", target);
-		waitKey();
+		//cv::cvtColor(target, target, CV_GRAY2RGB);// CV_BayerBG2GRAY
+		cv::imshow("Resize Image", target);
+		cv::waitKey();
 	}
 }
 
+//#include "config\include\dcmtk\config\osconfig.h"
+//#include "dcmdata\include\"
+
 void showDcmImage() 
 {
+	//DicomImage DCM_image("test.dcm");
+
+	//DcmFileFormat file;
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
 	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.dcm";
