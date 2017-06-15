@@ -115,30 +115,37 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 
 void eliminateMoire(cv::Mat& image)
 {
-	CV_DbgAssert(image.depth() == CV_32F);
-
+	CV_DbgAssert(image.depth() == CV_32F);	// float
 	int chanels = image.channels();	// 1 - grey, 2 - complex, 3 - rgb
-
 	int nRows = image.rows;
-	int nCols = image.cols/* * chanels*/;
+	int nCols = image.cols;
 
-	std::ofstream logfile("c:/Temp/0000.log", std::ios::out | std::ios::trunc);
-	if (logfile.is_open())
+	if (image.isContinuous())
 	{
-		double* p;
-		for (int i = 0; i < nRows; i++)
-		{
-			p = image.ptr<double>(i);
-			for (int j = 0; j < nCols; j++)
-			{
-				if (0 < j) logfile << ";";
-				logfile << p[j];
-			}
-			logfile << std::endl;
-		}
-
-		logfile.close();
+		nCols *= nRows;
+		nRows = 1;
 	}
+
+	const char* outfile = "c:/Temp/0000.log";
+	std::ofstream logfile(outfile, std::ios::binary);
+	if (!logfile.is_open())
+	{
+		std::cout << "Can not open outfile: " << outfile << std::endl;
+		return;
+	}
+
+	std::ostringstream oss;
+	for (int r = 0; r < image.rows; ++r)
+	{
+		float* p = image.ptr<float>(r);
+		for (int c = 0; c < image.cols; ++c)
+		{
+			if (0 < c) oss << ";";
+			oss << p[c];
+		}
+		oss << std::endl;
+	}
+	logfile << oss.str();
 }
 
 void linewiseIterate(cv::Mat& image) 
@@ -204,40 +211,40 @@ int main(int argc, char ** argv)
 {
 	help(argv[0]);
 
-	showRawImage();
+	//showRawImage();
 
-	//const char* filename = argc >= 2 ? argv[1] : "Assets/0002.jpg";
+	const char* filename = argc >= 2 ? argv[1] : "Assets/0001.jpg";
 
-	//Mat I = imread(filename, IMREAD_GRAYSCALE);
-	//if (I.empty())
-	//	return -1;
+	Mat I = imread(filename, IMREAD_GRAYSCALE);
+	if (I.empty())
+		return -1;
 
-	//std::vector<PixelValues> lineValues;
+	std::vector<PixelValues> lineValues;
 
-	//Mat padded;                            //expand input image to optimal size
-	//int m = getOptimalDFTSize(I.rows);
-	//int n = getOptimalDFTSize(I.cols); // on the border add zero values
-	//copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
+	Mat padded;                            //expand input image to optimal size
+	int m = getOptimalDFTSize(I.rows);
+	int n = getOptimalDFTSize(I.cols); // on the border add zero values
+	copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
 
-	//Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
-	//Mat complexI;
-	//merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
+	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
+	Mat complexI;
+	merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
 
-	//dft(complexI, complexI);            // this way the result may fit in the source matrix
+	dft(complexI, complexI);            // this way the result may fit in the source matrix
 
-	//									// compute the magnitude and switch to logarithmic scale
-	//									// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-	//split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
-	//magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
-	//Mat magI = planes[0];
+										// compute the magnitude and switch to logarithmic scale
+										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+	split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+	magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
+	Mat magI = planes[0];
 
-	//magI += Scalar::all(1);                    // switch to logarithmic scale
-	//log(magI, magI);
+	magI += Scalar::all(1);                    // switch to logarithmic scale
+	log(magI, magI);
 
-	//eliminateMoire(magI);
+	eliminateMoire(magI);
 
-	//// crop the spectrum, if it has an odd number of rows or columns
-	//magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
+	// crop the spectrum, if it has an odd number of rows or columns
+	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
 
 	//// rearrange the quadrants of Fourier image  so that the origin is at the image center
 	//int cx = magI.cols / 2;

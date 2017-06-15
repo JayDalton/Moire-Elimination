@@ -52,8 +52,12 @@ namespace ChartInUWP
       this.InitializeComponent();
       _data = new Dictionary<int, List<double>>();
       _chartRenderer = new ChartRenderer();
-      RenderRawImage();
-      ReadInputData();
+    }
+
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+      //RenderRawImage();
+      await ReadInputData();
     }
 
     private async Task RenderRawImage()
@@ -104,25 +108,36 @@ namespace ChartInUWP
       StorageFile file = await picker.PickSingleFileAsync();
       if (file != null)
       {
-        var rows = default(int);
-        var content = await FileIO.ReadLinesAsync(file);
-        foreach (var line in content)
+        try
         {
-          var fields = line.Split(';');
-          var values = new List<double>();
-          foreach (var field in fields)
+          var rows = default(int);
+          var content = await FileIO.ReadLinesAsync(file);
+          foreach (var line in content)
           {
-            values.Add(Convert.ToDouble(field, CultureInfo.InvariantCulture));
+            var fields = line.Split(';');
+            var values = new List<double>();
+            foreach (var field in fields)
+            {
+              if (!string.IsNullOrWhiteSpace(field))
+              {
+                values.Add(Convert.ToDouble(field, CultureInfo.InvariantCulture));
+              }
+            }
+            _data.Add(rows++, values);
           }
-          _data.Add(rows++, values);
+          if (_data.Count > 0)
+          {
+            MovingHorizontalSlider.Minimum = 0;
+            MovingHorizontalSlider.Maximum = _data[0].Count;
+            MovingVerticalSlider.Minimum = 0;
+            MovingVerticalSlider.Maximum = _data.Count;
+            GraphCanvas.Invalidate();
+          }
         }
-        if (_data.Count > 0)
+        catch (Exception ex)
         {
-          MovingHorizontalSlider.Minimum = 0;
-          MovingHorizontalSlider.Maximum = _data[0].Count;
-          MovingVerticalSlider.Minimum = 0;
-          MovingVerticalSlider.Maximum = _data.Count;
-          GraphCanvas.Invalidate();
+          Debug.WriteLine(ex.Message);
+          throw;
         }
       }
     }
@@ -135,7 +150,7 @@ namespace ChartInUWP
         int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
         int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
         var values = _data[MovingVerticalValue].GetRange(index, count);
-        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false);
+        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, _data[MovingVerticalValue].Max());
         _chartRenderer.RenderAxes(GraphCanvas, args);
       }
     }
@@ -151,6 +166,7 @@ namespace ChartInUWP
       MovingVerticalValue = (int)e.NewValue;
       GraphCanvas.Invalidate();
     }
+
   }
 
   class ChartRenderer
@@ -201,11 +217,11 @@ namespace ChartInUWP
       args.DrawingSession.DrawText("1", midWidth + 5, 5, Colors.Gray);
     }
 
-    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea)
+    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY)
     {
       if (data.Count == 0) return;
 
-      var maxY = data.Max();
+      //var maxY = data.Max();
       var maxX = canvas.ActualWidth;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
