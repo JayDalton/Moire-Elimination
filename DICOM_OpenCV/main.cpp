@@ -113,7 +113,7 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 	output = temp;
 }
 
-void eliminateMoire(cv::Mat& image)
+void eliminateMoire(cv::Mat& image, const char* outfile)
 {
 	CV_DbgAssert(image.depth() == CV_32F);	// float
 	int chanels = image.channels();	// 1 - grey, 2 - complex, 3 - rgb
@@ -126,7 +126,7 @@ void eliminateMoire(cv::Mat& image)
 		nRows = 1;
 	}
 
-	const char* outfile = "c:/Temp/0000.log";
+	//const char* outfile = "c:/Temp/0000.log";
 	std::ofstream logfile(outfile, std::ios::binary);
 	if (!logfile.is_open())
 	{
@@ -148,6 +148,27 @@ void eliminateMoire(cv::Mat& image)
 	logfile << oss.str();
 }
 
+void fullimageIterate(cv::Mat& image) 
+{
+	Mat dftInput, dftImage, inverseDFT, inverseDFTconverted;
+
+	image.convertTo(dftInput, CV_32F);
+	CV_DbgAssert(dftInput.depth() == CV_32F);	// float
+	dft(dftInput, dftImage, DFT_COMPLEX_OUTPUT);    // Applying DFT
+
+
+														// Reconstructing original imae from the DFT coefficients
+	idft(dftImage, inverseDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
+	inverseDFT.convertTo(inverseDFTconverted, CV_8U);
+	imshow("Output", inverseDFTconverted);
+	
+	//show the image
+	imshow("Original Image", image);
+	
+	// Wait until user press some key
+	waitKey(0);
+}
+
 void linewiseIterate(cv::Mat& image) 
 {
 	cv::Mat dftInput;
@@ -158,11 +179,10 @@ void linewiseIterate(cv::Mat& image)
 		cv::Mat one_row = dftInput.row(i);
 		cv::dft(one_row, one_row_in_frequency_domain, cv::DFT_COMPLEX_OUTPUT);
 
-		double* p = one_row_in_frequency_domain.ptr<double>(0);
-
+		float* p = one_row_in_frequency_domain.ptr<float>(0);
 		for (size_t j = 0; j < one_row_in_frequency_domain.cols; j++)
 		{
-			std::cout << p[j] << ", ";
+			//std::cout << p[j] << ", ";
 		}
 		std::cout << std::endl;
 	}
@@ -194,9 +214,6 @@ void showRawImage()
 	}
 }
 
-//#include "config\include\dcmtk\config\osconfig.h"
-//#include "dcmdata\include\"
-
 void showDcmImage() 
 {
 	//DicomImage DCM_image("test.dcm");
@@ -219,7 +236,8 @@ int main(int argc, char ** argv)
 	if (I.empty())
 		return -1;
 
-	std::vector<PixelValues> lineValues;
+	linewiseIterate(I);
+	fullimageIterate(I);
 
 	Mat padded;                            //expand input image to optimal size
 	int m = getOptimalDFTSize(I.rows);
@@ -238,10 +256,12 @@ int main(int argc, char ** argv)
 	magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
 	Mat magI = planes[0];
 
+	//eliminateMoire(magI, "c:/Temp/magnitude.log");
+
 	magI += Scalar::all(1);                    // switch to logarithmic scale
 	log(magI, magI);
 
-	eliminateMoire(magI);
+	//eliminateMoire(magI, "c:/Temp/logarithmic.log");
 
 	// crop the spectrum, if it has an odd number of rows or columns
 	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));

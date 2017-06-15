@@ -21,16 +21,18 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
                 <TextBlock Text="Breite"/>
-                <Slider x:Name="MovingHorizontalSlider" ValueChanged="MovingHorizontalSlider_ValueChanged" Value="1" SmallChange="1"/>
+                <Slider x:Name="MovingHorizontalSlider" ValueChanged="MovingHorizontalSlider_ValueChanged" SmallChange="1"/>
                 <TextBlock Text="Zeilen"/>
-                <Slider x:Name="MovingVerticalSlider" ValueChanged="MovingVerticalSlider_ValueChanged" Value="1" SmallChange="1"/>
+                <Slider x:Name="MovingVerticalSlider" ValueChanged="MovingVerticalSlider_ValueChanged" SmallChange="1"/>
             </StackPanel>
-            <Image Grid.Column="1" Width="200" x:Name="GreyImage"/>
+            <Button Grid.Column="1" Click="Button_Click">
+                <Image x:Name="GreyImage" Width="200" Height="200"/>
+            </Button>
         </Grid>
     </Grid>
 </Page>

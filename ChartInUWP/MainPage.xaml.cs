@@ -47,6 +47,9 @@ namespace ChartInUWP
     int MovingHorizontalValue = default(int);
     int MovingVerticalValue = default(int);
 
+    double maxInputValue = double.MinValue;
+    double minInputValue = double.MaxValue;
+
     public MainPage()
     {
       this.InitializeComponent();
@@ -110,7 +113,10 @@ namespace ChartInUWP
       {
         try
         {
+          _data.Clear();
           var rows = default(int);
+          maxInputValue = double.MinValue;
+          minInputValue = double.MaxValue;
           var content = await FileIO.ReadLinesAsync(file);
           foreach (var line in content)
           {
@@ -118,19 +124,20 @@ namespace ChartInUWP
             var values = new List<double>();
             foreach (var field in fields)
             {
-              if (!string.IsNullOrWhiteSpace(field))
-              {
-                values.Add(Convert.ToDouble(field, CultureInfo.InvariantCulture));
-              }
+              values.Add(Convert.ToDouble(field, CultureInfo.InvariantCulture));
             }
+            maxInputValue = Math.Max(maxInputValue, values.Max());
+            minInputValue = Math.Min(minInputValue, values.Min());
             _data.Add(rows++, values);
           }
           if (_data.Count > 0)
           {
+            MovingHorizontalSlider.Value = 0;
             MovingHorizontalSlider.Minimum = 0;
-            MovingHorizontalSlider.Maximum = _data[0].Count;
+            MovingHorizontalSlider.Maximum = _data[0].Count - 1;
+            MovingVerticalSlider.Value = 0;
             MovingVerticalSlider.Minimum = 0;
-            MovingVerticalSlider.Maximum = _data.Count;
+            MovingVerticalSlider.Maximum = _data.Count - 1;
             GraphCanvas.Invalidate();
           }
         }
@@ -150,9 +157,9 @@ namespace ChartInUWP
         int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
         int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
         var values = _data[MovingVerticalValue].GetRange(index, count);
-        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, _data[MovingVerticalValue].Max());
-        _chartRenderer.RenderAxes(GraphCanvas, args);
+        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, maxInputValue, minInputValue);
       }
+      _chartRenderer.RenderAxes(GraphCanvas, args, maxInputValue);
     }
 
     private void MovingHorizontalSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -167,16 +174,20 @@ namespace ChartInUWP
       GraphCanvas.Invalidate();
     }
 
+    private async void Button_Click(object sender, RoutedEventArgs e)
+    {
+      await ReadInputData();
+    }
   }
 
   class ChartRenderer
   {
-    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args)
+    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY)
     {
       var width = (float)canvas.ActualWidth;
       var height = (float)(canvas.ActualHeight);
-      var midWidth = (float)(width * .5);
-      var midHeight = (float)(height * .5);
+      var midWidth = (float)(width * .025);
+      var midHeight = (float)(height * .975);
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
@@ -214,23 +225,22 @@ namespace ChartInUWP
       }
 
       args.DrawingSession.DrawText("0", midWidth + 5, height - 30, Colors.Gray);
-      args.DrawingSession.DrawText("1", midWidth + 5, 5, Colors.Gray);
+      args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
     }
 
-    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY)
+    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY, double minY)
     {
       if (data.Count == 0) return;
 
-      //var maxY = data.Max();
-      var maxX = canvas.ActualWidth;
-
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
-        cpb.BeginFigure(new Vector2(0, (float)(data[0] * canvas.ActualHeight / maxY)));
+        cpb.BeginFigure(new Vector2(0, (float)(canvas.ActualHeight - data[0] * canvas.ActualHeight / maxY)));
+        //cpb.BeginFigure(new Vector2(0, (float)(data[0] * canvas.ActualHeight / maxY)));
 
         for (int i = 1; i < data.Count; i++)
         {
-          cpb.AddLine(new Vector2(i, (float)(data[i] * canvas.ActualHeight / maxY)));
+          cpb.AddLine(new Vector2(i, (float)(canvas.ActualHeight - data[i] * canvas.ActualHeight / maxY)));
+          //cpb.AddLine(new Vector2(i, (float)(data[i] * canvas.ActualHeight / maxY)));
         }
 
         if (renderArea)
