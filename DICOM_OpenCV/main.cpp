@@ -113,20 +113,99 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 	output = temp;
 }
 
-void eliminateMoire(cv::Mat& image, const char* outfile)
+void showMagImage(cv::Mat& image)
+{
+	// rearrange the quadrants of Fourier image  so that the origin is at the image center
+	int cx = image.cols / 2;
+	int cy = image.rows / 2;
+
+	Mat q0(image, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	Mat q1(image, Rect(cx, 0, cx, cy));  // Top-Right
+	Mat q2(image, Rect(0, cy, cx, cy));  // Bottom-Left
+	Mat q3(image, Rect(cx, cy, cx, cy)); // Bottom-Right
+
+	Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	q0.copyTo(tmp);
+	q3.copyTo(q0);
+	tmp.copyTo(q3);
+
+	q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+	q2.copyTo(q1);
+	tmp.copyTo(q2);
+
+	cv::normalize(image, image, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
+													 // viewable image form (float between values 0 and 1).
+
+	cv::imshow("spectrum magnitude", image);
+}
+
+void write2ChannelToString(cv::Mat& image, std::ostringstream& oss1, std::ostringstream& oss2)
 {
 	CV_DbgAssert(image.depth() == CV_32F);	// float
-	int chanels = image.channels();	// 1 - grey, 2 - complex, 3 - rgb
-	int nRows = image.rows;
-	int nCols = image.cols;
+	CV_DbgAssert(image.channels() == 2);	// 1 - grey, 2 - complex, 3 - rgb
 
-	if (image.isContinuous())
+	for (int row = 0; row < image.rows; ++row)
 	{
-		nCols *= nRows;
-		nRows = 1;
+		float* p = image.ptr<float>(row);
+		for (int col = 0; col < image.cols * image.channels(); ++col)
+		{
+			if (0 < col) oss1 << ";";
+			if (0 < col) oss2 << ";";
+			oss1 << p[col++];
+			oss2 << p[col];
+		}
+		oss1 << std::endl;
+		oss2 << std::endl;
+	}
+}
+
+void write2ChannelLogFile(cv::Mat& image, const char* outfile)
+{
+	CV_DbgAssert(image.depth() == CV_32F);	// float
+	CV_DbgAssert(image.channels() == 2);	// 1 - grey, 2 - complex, 3 - rgb
+
+	std::string fname(outfile);
+	std::ofstream channel1(fname + std::string("Channel1.log"), std::ios::binary);
+	std::ofstream channel2(fname + std::string("Channel2.log"), std::ios::binary);
+	if (!channel1.is_open() || !channel2.is_open())
+	{
+		std::cout << "Can not open outfile: " << outfile << std::endl;
+		return;
 	}
 
-	//const char* outfile = "c:/Temp/0000.log";
+	double t = (double)getTickCount();
+
+	std::ostringstream oss1, oss2;
+	write2ChannelToString(image, oss1, oss2);
+	channel1 << oss1.str();
+	channel2 << oss2.str();
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "Write 2 Channel LogFile in seconds: " << t << endl;
+}
+
+void write1ChannelToString(cv::Mat& image, std::ostringstream& oss) 
+{
+	CV_DbgAssert(image.depth() == CV_32F);	// float
+	CV_DbgAssert(image.channels() == 1);	// 1 - grey, 2 - complex, 3 - rgb
+
+	for (int row = 0; row < image.rows; ++row)
+	{
+		float* p = image.ptr<float>(row);
+		for (int col = 0; col < image.cols; ++col)
+		{
+			if (0 < col) oss << ";";
+			oss << p[col];
+		}
+		oss << std::endl;
+	}
+}
+
+void write1ChannelLogFile(cv::Mat& image, const char* outfile)
+{
+	CV_DbgAssert(image.depth() == CV_32F);	// float
+	CV_DbgAssert(image.channels() == 1);	// 1 - grey, 2 - complex, 3 - rgb
+
 	std::ofstream logfile(outfile, std::ios::binary);
 	if (!logfile.is_open())
 	{
@@ -134,58 +213,117 @@ void eliminateMoire(cv::Mat& image, const char* outfile)
 		return;
 	}
 
+	double t = (double)getTickCount();
+
 	std::ostringstream oss;
-	for (int r = 0; r < image.rows; ++r)
-	{
-		float* p = image.ptr<float>(r);
-		for (int c = 0; c < image.cols; ++c)
-		{
-			if (0 < c) oss << ";";
-			oss << p[c];
-		}
-		oss << std::endl;
-	}
+	write1ChannelToString(image, oss);
 	logfile << oss.str();
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "Write 1 Channel LogFile in seconds: " << t << endl;
 }
 
-void fullimageIterate(cv::Mat& image) 
+void fullImageIterate(cv::Mat& image) 
 {
-	Mat dftInput, dftImage, inverseDFT, inverseDFTconverted;
+	Mat paddedImage;								// expand input image to optimal size
+	int m = cv::getOptimalDFTSize(image.rows);
+	int n = cv::getOptimalDFTSize(image.cols);		// on the border add zero values
+	cv::copyMakeBorder(image, paddedImage, 0, m - image.rows, 0, n - image.cols, BORDER_CONSTANT, Scalar::all(0));
 
-	image.convertTo(dftInput, CV_32F);
-	CV_DbgAssert(dftInput.depth() == CV_32F);	// float
-	dft(dftInput, dftImage, DFT_COMPLEX_OUTPUT);    // Applying DFT
+	Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
+	Mat complexI;
+	cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
 
+	cv::dft(complexI, complexI);					// this way the result may fit in the source matrix
 
-														// Reconstructing original imae from the DFT coefficients
-	idft(dftImage, inverseDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
-	inverseDFT.convertTo(inverseDFTconverted, CV_8U);
-	imshow("Output", inverseDFTconverted);
+	//write2ChannelLogFile(complexI, "c:/Temp/Complex");
+
+													// compute the magnitude and switch to logarithmic scale
+	Mat magI;										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+	cv::split(complexI, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+	cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
+
+	//write1ChannelLogFile(magI, "c:/Temp/magnitude.log");
+
+	magI += Scalar::all(1);							// switch to logarithmic scale
+	cv::log(magI, magI);
+
+	//write1ChannelLogFile(magI, "c:/Temp/logarithmic.log");
+
+	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));	// crop the spectrum, if it has an odd number of rows or columns
+
+	//showMagImage(magI);
+	// rearrange the quadrants of Fourier image  so that the origin is at the image center
+	int cx = magI.cols / 2;
+	int cy = magI.rows / 2;
 	
-	//show the image
-	imshow("Original Image", image);
+	cv::Mat q0(magI, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	cv::Mat q1(magI, cv::Rect(cx, 0, cx, cy));  // Top-Right
+	cv::Mat q2(magI, cv::Rect(0, cy, cx, cy));  // Bottom-Left
+	cv::Mat q3(magI, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
 	
+	cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	q0.copyTo(tmp);
+	q3.copyTo(q0);
+	tmp.copyTo(q3);
+	
+	q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+	q2.copyTo(q1);
+	tmp.copyTo(q2);
+	
+	normalize(magI, magI, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
+												// viewable image form (float between values 0 and 1).
+	
+	imshow("Input Image", image);    // Show the result
+	imshow("spectrum magnitude", magI);
+	cv::waitKey();
+
 	// Wait until user press some key
 	waitKey(0);
 }
 
 void linewiseIterate(cv::Mat& image) 
 {
-	cv::Mat dftInput;
-	image.convertTo(dftInput, CV_32F);
-	cv::Mat one_row_in_frequency_domain;
-	for (int i = 0; i < 1/*dftInput.rows*/; i++)
-	{
-		cv::Mat one_row = dftInput.row(i);
-		cv::dft(one_row, one_row_in_frequency_domain, cv::DFT_COMPLEX_OUTPUT);
+	double t = (double)getTickCount();
 
-		float* p = one_row_in_frequency_domain.ptr<float>(0);
-		for (size_t j = 0; j < one_row_in_frequency_domain.cols; j++)
-		{
-			//std::cout << p[j] << ", ";
-		}
-		std::cout << std::endl;
+	std::ostringstream oss;
+	for (int row = 0; row < image.rows; ++row)
+	{
+		cv::Mat one_row = image.row(row);
+
+		Mat paddedRow;									// expand input image to optimal size
+		int n = cv::getOptimalDFTSize(one_row.cols);	// on the border add zero values
+		cv::copyMakeBorder(one_row, paddedRow, 0, 0, 0, n - image.cols, BORDER_CONSTANT, Scalar::all(0));
+
+		Mat planes[] = { Mat_<float>(paddedRow), Mat::zeros(paddedRow.size(), CV_32F) };
+		Mat complexI;
+		cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
+
+		cv::dft(complexI, complexI);
+
+		Mat magI;										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+		cv::split(complexI, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+		cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
+
+		magI += Scalar::all(1);							// switch to logarithmic scale
+		cv::log(magI, magI);
+
+		write1ChannelToString(magI, oss);
+
+		magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));	// crop the spectrum, if it has an odd number of rows or columns
 	}
+
+	std::string fname("C:/Temp/LineWiseImage.log");
+	std::ofstream logfile(fname, std::ios::binary);
+	if (!logfile.is_open())
+	{
+		std::cout << "Can not open outfile: " << fname << std::endl;
+		return;
+	}
+	logfile << oss.str();
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "Linewise iterate in seconds: " << t << endl;
 }
 
 void showRawImage() 
@@ -233,199 +371,16 @@ int main(int argc, char ** argv)
 	const char* filename = argc >= 2 ? argv[1] : "Assets/0001.jpg";
 
 	Mat I = imread(filename, IMREAD_GRAYSCALE);
-	if (I.empty())
-		return -1;
+	if (I.empty()) return -1;
 
-	linewiseIterate(I);
-	fullimageIterate(I);
+	//linewiseIterate(I);
+	fullImageIterate(I);
 
-	Mat padded;                            //expand input image to optimal size
-	int m = getOptimalDFTSize(I.rows);
-	int n = getOptimalDFTSize(I.cols); // on the border add zero values
-	copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
-
-	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
-	Mat complexI;
-	merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
-
-	dft(complexI, complexI);            // this way the result may fit in the source matrix
-
-										// compute the magnitude and switch to logarithmic scale
-										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-	split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
-	magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
-	Mat magI = planes[0];
-
-	//eliminateMoire(magI, "c:/Temp/magnitude.log");
-
-	magI += Scalar::all(1);                    // switch to logarithmic scale
-	log(magI, magI);
-
-	//eliminateMoire(magI, "c:/Temp/logarithmic.log");
-
-	// crop the spectrum, if it has an odd number of rows or columns
-	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));
-
-	//// rearrange the quadrants of Fourier image  so that the origin is at the image center
-	//int cx = magI.cols / 2;
-	//int cy = magI.rows / 2;
-
-	//Mat q0(magI, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-	//Mat q1(magI, Rect(cx, 0, cx, cy));  // Top-Right
-	//Mat q2(magI, Rect(0, cy, cx, cy));  // Bottom-Left
-	//Mat q3(magI, Rect(cx, cy, cx, cy)); // Bottom-Right
-
-	//Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
-	//q0.copyTo(tmp);
-	//q3.copyTo(q0);
-	//tmp.copyTo(q3);
-
-	//q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
-	//q2.copyTo(q1);
-	//tmp.copyTo(q2);
-
-	//normalize(magI, magI, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
-	//										  // viewable image form (float between values 0 and 1).
-
-	//imshow("Input Image", I);    // Show the result
-	//imshow("spectrum magnitude", magI);
-	//waitKey();
+	waitKey();
 
 	return 0;
 }
-//int main(int argc, char ** argv)
-//{
-//	cv::Mat image = cv::imread("Assets/0003.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-//	cv::imshow("Original", image);
-//	cv::imwrite("c:/Temp/original.jpg", image);
-//	cv::waitKey();
-//
-//	cv::Mat dftInput;
-//	image.convertTo(dftInput, CV_32F);
-//
-//	double t = (double)cv::getTickCount();
-//
-//	cv::Mat dftImage;
-//	cv::dft(dftInput, dftImage, cv::DFT_COMPLEX_OUTPUT);
-//
-//	eliminateMoire(dftImage);
-//
-//	cv::Mat dftImageInverse;
-//	cv::dft(dftImage, dftImageInverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
-//
-//	t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-//	std::cout << "Times passed in sec: " << t << std::endl;
-//
-//	cv::Mat convertedImage;
-//	dftImageInverse.convertTo(convertedImage, CV_8U);
-//	cv::imwrite("c:/Temp/result.jpg", convertedImage);
-//	cv::imshow("Converted", convertedImage);
-//	cv::waitKey();
-//
-//	return 0;
-//}
 
-
-//#include "opencv2/highgui/highgui.hpp"
-//#include <iostream>
-//
-//using namespace std;
-//using namespace cv;
-
-//int main()
-//{
-//	// Read image from file
-//	// Make sure that the image is in grayscale
-//	Mat img = imread("lena.JPG", 0);
-//
-//	Mat planes[] = { Mat_<float>(img), Mat::zeros(img.size(), CV_32F) };
-//	Mat complexI;    //Complex plane to contain the DFT coefficients {[0]-Real,[1]-Img}
-//	merge(planes, 2, complexI);
-//	dft(complexI, complexI);  // Applying DFT
-//
-//							  // Reconstructing original imae from the DFT coefficients
-//	Mat invDFT, invDFTcvt;
-//	idft(complexI, invDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
-//	invDFT.convertTo(invDFTcvt, CV_8U);
-//	imshow("Output", invDFTcvt);
-//
-//	//show the image
-//	imshow("Original Image", img);
-//
-//	// Wait until user press some key
-//	waitKey(0);
-//	return 0;
-//}
-
-//#include "opencv2/highgui/highgui.hpp"
-//#include <iostream>
-//
-//using namespace std;
-//using namespace cv;
-//
-//int main()
-//{
-//	// Read image from file
-//	// Make sure that the image is in grayscale
-//	Mat img = imread("lena.JPG", 0);
-//
-//	Mat dftInput1, dftImage1, inverseDFT, inverseDFTconverted;
-//	img.convertTo(dftInput1, CV_32F);
-//	dft(dftInput1, dftImage1, DFT_COMPLEX_OUTPUT);    // Applying DFT
-//
-//													  // Reconstructing original imae from the DFT coefficients
-//	idft(dftImage1, inverseDFT, DFT_SCALE | DFT_REAL_OUTPUT); // Applying IDFT
-//	inverseDFT.convertTo(inverseDFTconverted, CV_8U);
-//	imshow("Output", inverseDFTconverted);
-//
-//	//show the image
-//	imshow("Original Image", img);
-//
-//	// Wait until user press some key
-//	waitKey(0);
-//	return 0;
-//}
-
-
-//int main(int argc, char ** argv)
-//{
-//	cv::Mat originalImage = cv::imread("Assets/0002.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-//	cv::imshow("Original", originalImage);
-//	cv::imwrite("c:/Temp/original.jpg", originalImage);
-//	cv::waitKey();
-//
-//	cv::Mat originalFloat;
-//	originalImage.convertTo(originalFloat, CV_32F/*, 1.0 / 255.0*/);
-//
-//	//cv::Mat dftOfOriginal;
-//	//takeDFT(originalFloat, dftOfOriginal);
-//	////recenterDFT(dftOfOriginal);
-//	//showDFT("Magnitude DFT", dftOfOriginal);
-//
-//	cv::Mat fourierImage;
-//	cv::dft(originalFloat, fourierImage, cv::DFT_COMPLEX_OUTPUT);
-//	
-//	//eliminateMoire(dftOfOriginal.size(), dftOfOriginal, 256 / 2, 256 / 2, 40, 40);
-//	//showDFT("Changed DFT", dftOfOriginal);
-//
-//	//cv::Mat invertedDFT;
-//	//invertDFT(dftOfOriginal, invertedDFT);
-//	//showDFT("Inverted DFT", invertedDFT);
-//
-//	cv::Mat inverseImage;
-//	cv::dft(fourierImage, inverseImage, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
-//
-//	cv::Mat convertedImage;
-//	inverseImage.convertTo(convertedImage, CV_8U);
-//	cv::imwrite("c:/Temp/result.jpg", convertedImage);
-//
-//	//cv::Mat output;
-//	//createGaussian(cv::Size(256, 256), output, 256 / 2, 256 / 2, 20, 20);
-//	//cv::imshow("Gaussian", output);
-//	//cv::waitKey();
-//
-//	return 0;
-//}
 
 //int main(int argc, char ** argv)
 //{
@@ -484,25 +439,5 @@ int main(int argc, char ** argv)
 //	imshow("spectrum magnitude", magI);
 //	cv::waitKey();
 //
-//	return 0;
-//}
-
-//int main(int argc, char** argv)
-//{
-//	if (argc != 2)
-//	{
-//		cout << " Usage: display_image ImageToLoadAndDisplay" << endl;
-//		return -1;
-//	}
-//	Mat image;
-//	image = imread(argv[1], IMREAD_COLOR); // Read the file
-//	if (image.empty()) // Check for invalid input
-//	{
-//		cout << "Could not open or find the image" << std::endl;
-//		return -1;
-//	}
-//	namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
-//	imshow("Display window", image); // Show our image inside it.
-//	waitKey(0); // Wait for a keystroke in the window
 //	return 0;
 //}
