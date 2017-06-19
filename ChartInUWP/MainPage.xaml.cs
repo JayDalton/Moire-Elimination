@@ -75,6 +75,8 @@ namespace ChartInUWP
       StorageFile file = await picker.PickSingleFileAsync();
       if (file != null)
       {
+        LoadProgress.IsActive = true;
+        LoadProgress.Visibility = Visibility.Visible;
         using (var stream = await file.OpenAsync(FileAccessMode.Read))
         {
           var bytes = new byte[stream.Size];
@@ -95,7 +97,10 @@ namespace ChartInUWP
           var softwareBitmapeSource = new SoftwareBitmapSource();
           await softwareBitmapeSource.SetBitmapAsync(softwareBitmap);
           GreyImage.Source = softwareBitmapeSource;
-        } 
+        }
+
+        LoadProgress.IsActive = false;
+        LoadProgress.Visibility = Visibility.Collapsed;
       }
     }
 
@@ -111,6 +116,8 @@ namespace ChartInUWP
       StorageFile file = await picker.PickSingleFileAsync();
       if (file != null)
       {
+        LoadProgress.IsActive = true;
+        LoadProgress.Visibility = Visibility.Visible;
         try
         {
           _data.Clear();
@@ -146,6 +153,8 @@ namespace ChartInUWP
           Debug.WriteLine(ex.Message);
           throw;
         }
+        LoadProgress.IsActive = false;
+        LoadProgress.Visibility = Visibility.Collapsed;
       }
     }
 

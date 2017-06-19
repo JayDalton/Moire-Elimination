@@ -19,6 +19,8 @@
             Margin="5" Grid.Row="0"
             Draw="OnDrawGraph" />
 
+        <ProgressRing x:Name="LoadProgress" Width="50" Height="50"/>
+
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
