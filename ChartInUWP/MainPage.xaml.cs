@@ -187,6 +187,11 @@ namespace ChartInUWP
     {
       await ReadInputData();
     }
+
+    private async void LoadRawBitmapButton(object sender, RoutedEventArgs e)
+    {
+      await RenderRawImage();
+    }
   }
 
   class ChartRenderer

@@ -225,6 +225,15 @@ void write1ChannelLogFile(cv::Mat& image, const char* outfile)
 
 void fullImageIterate(cv::Mat& image) 
 {
+	Mat result;
+	if (image.depth() != CV_32F)
+	{
+		image.convertTo(result, CV_32F);
+	}
+
+	CV_DbgAssert(image.depth() == CV_32F);	// float
+	CV_DbgAssert(image.channels() == 1);	// 1 - grey, 2 - complex, 3 - rgb
+
 	Mat paddedImage;								// expand input image to optimal size
 	int m = cv::getOptimalDFTSize(image.rows);
 	int n = cv::getOptimalDFTSize(image.cols);		// on the border add zero values
@@ -248,35 +257,35 @@ void fullImageIterate(cv::Mat& image)
 	magI += Scalar::all(1);							// switch to logarithmic scale
 	cv::log(magI, magI);
 
-	//write1ChannelLogFile(magI, "c:/Temp/logarithmic.log");
+	write1ChannelLogFile(magI, "c:/Temp/logarithmic.r0.log");
 
 	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));	// crop the spectrum, if it has an odd number of rows or columns
 
 	//showMagImage(magI);
 	// rearrange the quadrants of Fourier image  so that the origin is at the image center
-	int cx = magI.cols / 2;
-	int cy = magI.rows / 2;
-	
-	cv::Mat q0(magI, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-	cv::Mat q1(magI, cv::Rect(cx, 0, cx, cy));  // Top-Right
-	cv::Mat q2(magI, cv::Rect(0, cy, cx, cy));  // Bottom-Left
-	cv::Mat q3(magI, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
-	
-	cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
-	q0.copyTo(tmp);
-	q3.copyTo(q0);
-	tmp.copyTo(q3);
-	
-	q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
-	q2.copyTo(q1);
-	tmp.copyTo(q2);
-	
-	normalize(magI, magI, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
-												// viewable image form (float between values 0 and 1).
-	
-	imshow("Input Image", image);    // Show the result
-	imshow("spectrum magnitude", magI);
-	cv::waitKey();
+	//int cx = magI.cols / 2;
+	//int cy = magI.rows / 2;
+	//
+	//cv::Mat q0(magI, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	//cv::Mat q1(magI, cv::Rect(cx, 0, cx, cy));  // Top-Right
+	//cv::Mat q2(magI, cv::Rect(0, cy, cx, cy));  // Bottom-Left
+	//cv::Mat q3(magI, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
+	//
+	//cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	//q0.copyTo(tmp);
+	//q3.copyTo(q0);
+	//tmp.copyTo(q3);
+	//
+	//q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+	//q2.copyTo(q1);
+	//tmp.copyTo(q2);
+	//
+	//normalize(magI, magI, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
+	//											// viewable image form (float between values 0 and 1).
+	//
+	//imshow("Input Image", image);    // Show the result
+	//imshow("spectrum magnitude", magI);
+	//cv::waitKey();
 
 	// Wait until user press some key
 	waitKey(0);
@@ -326,11 +335,11 @@ void linewiseIterate(cv::Mat& image)
 	cout << "Linewise iterate in seconds: " << t << endl;
 }
 
-void showRawImage() 
+void showRawImage(cv::Mat& image) 
 {
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
-	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.raw";
+	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
 
 	std::ifstream fin(filename, std::ios::binary | std::ios::ate);
 	std::ifstream::pos_type pos = fin.tellg();
@@ -341,12 +350,11 @@ void showRawImage()
 
 	if (result.size() == IMG_ROWS * IMG_COLS)
 	{
-		cv::Mat image(IMG_ROWS, IMG_COLS, CV_16U, &result[0]);
+		image = cv::Mat (IMG_ROWS, IMG_COLS, CV_16U, &result[0]);
 		cv::imshow("RAW Image", image);
 
 		cv::Mat target;
 		cv::resize(image, target, cv::Size(600, 600), 0, 0, INTER_AREA);
-		//cv::cvtColor(target, target, CV_GRAY2RGB);// CV_BayerBG2GRAY
 		cv::imshow("Resize Image", target);
 		cv::waitKey();
 	}
@@ -366,15 +374,16 @@ int main(int argc, char ** argv)
 {
 	help(argv[0]);
 
-	//showRawImage();
+	Mat image;
+	showRawImage(image);
 
-	const char* filename = argc >= 2 ? argv[1] : "Assets/0001.jpg";
+	//const char* filename = argc >= 2 ? argv[1] : "Assets/0001.jpg";
 
-	Mat I = imread(filename, IMREAD_GRAYSCALE);
-	if (I.empty()) return -1;
+	//Mat I = imread(filename, IMREAD_GRAYSCALE);
+	//if (I.empty()) return -1;
 
-	//linewiseIterate(I);
-	fullImageIterate(I);
+	////linewiseIterate(I);
+	fullImageIterate(image);
 
 	waitKey();
 
