@@ -4,45 +4,14 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <iostream>
 
 #include <iostream>
 #include <fstream>
+#include <climits>
+#include <intrin.h>
 
 using namespace cv;
 using namespace std;
-
-struct PixelValues {
-	double AdftComplexRe;
-	double AdftComplexIm;
-	double Bmagnitude;
-	double Cscalar;
-	double Dlogarithm;
-};
-
-static void help(char* progName)
-{
-	std::cout << std::endl
-		<< "This program demonstrated the use of the discrete Fourier transform (DFT). " << std::endl
-		<< "The dft of an image is taken and it's power spectrum is displayed." << std::endl
-		<< "Usage:" << std::endl
-		<< progName << " [image_name -- default Assets/0001.jpg] " << std::endl << std::endl;
-}
-
-void takeDFT(cv::Mat& source, cv::Mat& target) 
-{
-	cv::Mat originalComplex[2] = { source, cv::Mat::zeros(source.size(), CV_32F) };
-
-	cv::Mat dftReady;
-
-	cv::merge(originalComplex, 2, dftReady);
-
-	cv::Mat dftOfOriginal;
-
-	cv::dft(dftReady, dftOfOriginal, cv::DFT_COMPLEX_OUTPUT);
-
-	target = dftOfOriginal;
-}
 
 void recenterDFT(cv::Mat& source) 
 {
@@ -63,27 +32,6 @@ void recenterDFT(cv::Mat& source)
 	q2.copyTo(swapMap);
 	q3.copyTo(q2);
 	swapMap.copyTo(q3);
-}
-
-void showDFT(std::string label, cv::Mat& source) 
-{
-	cv::Mat splitArray[2] = {cv::Mat::zeros(source.size(), CV_32F), cv::Mat::zeros(source.size(), CV_32F) };
-
-	cv::split(source, splitArray);
-
-	cv::Mat dftMagnitude;
-
-	cv::magnitude(splitArray[0], splitArray[1], dftMagnitude);
-
-	dftMagnitude += cv::Scalar::all(1);
-
-	cv::log(dftMagnitude, dftMagnitude);
-
-	cv::normalize(dftMagnitude, dftMagnitude, 0, 1, CV_MINMAX);
-
-	cv::imshow(label, dftMagnitude);
-
-	cv::waitKey();
 }
 
 void invertDFT(cv::Mat& source, cv::Mat& target) 
@@ -267,71 +215,23 @@ void linewiseIterate(cv::Mat& image)
 	cout << "Linewise iterate in seconds: " << t << endl;
 }
 
-void fullImageIterate(cv::Mat& image)
+
+void performDFT(cv::Mat& source, cv::Mat& target) 
 {
-	Mat paddedImage;								// expand input image to optimal size
-	int m = cv::getOptimalDFTSize(image.rows);
-	int n = cv::getOptimalDFTSize(image.cols);		// on the border add zero values
-	cv::copyMakeBorder(image, paddedImage, 0, m - image.rows, 0, n - image.cols, BORDER_CONSTANT, Scalar::all(0));
+	cv::Mat paddedImage;								// expand input image to optimal size
+	int m = cv::getOptimalDFTSize(source.rows);
+	int n = cv::getOptimalDFTSize(source.cols);		// on the border add zero values
+	cv::copyMakeBorder(source, paddedImage, 0, m - source.rows, 0, n - source.cols, BORDER_CONSTANT, Scalar::all(0));
 
-	Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
-	Mat complexI;
+	cv::Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
+
+	cv::Mat complexI;
 	cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
-
-	cv::dft(complexI, complexI);					// this way the result may fit in the source matrix
-
-													//write2ChannelLogFile(complexI, "c:/Temp/Complex");
-
-													// compute the magnitude and switch to logarithmic scale
-	Mat magI;										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-	cv::split(complexI, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
-	cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
-
-													//write1ChannelLogFile(magI, "c:/Temp/magnitude.log");
-
-	magI += Scalar::all(1);							// switch to logarithmic scale
-	cv::log(magI, magI);
-
-	//write1ChannelLogFile(magI, "c:/Temp/logarithmic.r0.log");	// write log scale to file for presentation
-
-	magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));	// crop the spectrum, if it has an odd number of rows or columns
-
-																//showMagImage(magI);
-																// rearrange the quadrants of Fourier image  so that the origin is at the image center
-																//int cx = magI.cols / 2;
-																//int cy = magI.rows / 2;
-																//
-																//cv::Mat q0(magI, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-																//cv::Mat q1(magI, cv::Rect(cx, 0, cx, cy));  // Top-Right
-																//cv::Mat q2(magI, cv::Rect(0, cy, cx, cy));  // Bottom-Left
-																//cv::Mat q3(magI, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
-																//
-																//cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
-																//q0.copyTo(tmp);
-																//q3.copyTo(q0);
-																//tmp.copyTo(q3);
-																//
-																//q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
-																//q2.copyTo(q1);
-																//tmp.copyTo(q2);
-																//
-																//normalize(magI, magI, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
-																//											// viewable image form (float between values 0 and 1).
-																//
-																//imshow("Input Image", image);    // Show the result
-																//imshow("spectrum magnitude", magI);
-																//cv::waitKey();
-
-																// Wait until user press some key
-	waitKey(0);
+	cv::dft(complexI, target, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
 }
 
-void readRawImage()
+std::vector<unsigned short> readRawImage(const char* filename, bool swap = false)
 {
-	unsigned short IMG_ROWS = 4320;
-	unsigned short IMG_COLS = 4318;
-	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
-
 	std::ifstream fin(filename, std::ios::binary | std::ios::ate);
 	std::ifstream::pos_type pos = fin.tellg();
 	std::vector<unsigned short> result(pos / 2);	// 16 bits
@@ -339,27 +239,84 @@ void readRawImage()
 	fin.read(reinterpret_cast<char*>(&result[0]), pos);
 	fin.close();
 
-	cv::Mat image (IMG_ROWS, IMG_COLS, CV_16U, &result[0]);
-	cv::imshow("Show RAW Image", image);
+	if (swap)
+	{
+		// swap byte order (intrin.h)
+		for (auto& item : result) {
+			item = _byteswap_ushort(item);
+		}
+	}
 
-	fullImageIterate(image);		// DFT
+	return result;
+}
 
-	cv::Mat target;
-	cv::resize(image, target, cv::Size(600, 600), 0, 0, INTER_AREA);
-	cv::imshow("Show Resized RAW Image", target);
+void showImage(const char* label, Mat& image, cv::Size size = cv::Size()) 
+{
+	if (0 < size.height && 0 < size.width)
+	{
+		cv::Mat target;
+		cv::resize(image, target, size, 0, 0, INTER_AREA);
+		cv::imshow(label, target);
+	}
+	else
+	{
+		cv::imshow(label, image);
+	}
 	cv::waitKey();
 }
 
+void showDFT(const char* label, cv::Mat& source, cv::Size size = cv::Size(), bool rearrange = false)
+{
+	cv::Mat splitArray[2] = { cv::Mat::zeros(source.size(), CV_32F), cv::Mat::zeros(source.size(), CV_32F) };
+	cv::split(source, splitArray);
+
+	cv::Mat dftMagnitude;
+	cv::magnitude(splitArray[0], splitArray[1], dftMagnitude);
+	dftMagnitude += cv::Scalar::all(1);
+
+	cv::log(dftMagnitude, dftMagnitude);
+	cv::normalize(dftMagnitude, dftMagnitude, 0, 1, CV_MINMAX);
+
+	if (rearrange)
+	{
+		recenterDFT(dftMagnitude);
+	}
+
+	showImage(label, dftMagnitude, size);
+}
+
+
+
 int main(int argc, char ** argv)
 {
-	help(argv[0]);
+	cv::Size screen(600, 600);
+	unsigned short IMG_ROWS = 4320;
+	unsigned short IMG_COLS = 4318;
+	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
 
-	readRawImage();
+	auto data = readRawImage(filename, false);
 
-	////linewiseIterate(I);
-	//fullImageIterate(image);
+	cv::Mat shortImage (IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
+	showImage("Short Data Image", shortImage, screen);
 
-	waitKey();
+	cv::Mat floatImage;
+	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
+	showImage("Float Data Image", floatImage, screen);
+
+	cv::Mat dftImage;
+	performDFT(floatImage, dftImage);
+
+	showDFT("DFT complex", dftImage, screen);
+	showDFT("DFT complex rearranged", dftImage, screen, true);
+
+	cv::Mat filterImage;
+
+
+	cv::Mat inverted;
+	invertDFT(dftImage, inverted);
+	showImage("DFT inverted", inverted, screen);
+
+	////fullImageIterate(image);		// DFT
 
 	return 0;
 }
