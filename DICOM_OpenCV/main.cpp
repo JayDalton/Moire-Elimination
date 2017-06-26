@@ -171,7 +171,26 @@ void write1ChannelLogFile(cv::Mat& image, const char* outfile)
 	cout << "Write 1 Channel LogFile in seconds: " << t << endl;
 }
 
-void linewiseIterate(cv::Mat& image) 
+void performDFT(cv::Mat& source, cv::Mat& target)
+{
+	double t = (double)getTickCount();
+
+	cv::Mat paddedImage;								// expand input image to optimal size
+	int m = cv::getOptimalDFTSize(source.rows);
+	int n = cv::getOptimalDFTSize(source.cols);		// on the border add zero values
+	cv::copyMakeBorder(source, paddedImage, 0, m - source.rows, 0, n - source.cols, BORDER_CONSTANT, Scalar::all(0));
+
+	cv::Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
+
+	cv::Mat complexI;
+	cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
+	cv::dft(complexI, target, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "perform DFT in seconds: " << t << endl;
+}
+
+void lineByLineIterate(cv::Mat& image)
 {
 	double t = (double)getTickCount();
 
@@ -180,26 +199,19 @@ void linewiseIterate(cv::Mat& image)
 	{
 		cv::Mat one_row = image.row(row);
 
-		Mat paddedRow;									// expand input image to optimal size
-		int n = cv::getOptimalDFTSize(one_row.cols);	// on the border add zero values
-		cv::copyMakeBorder(one_row, paddedRow, 0, 0, 0, n - image.cols, BORDER_CONSTANT, Scalar::all(0));
+		cv::Mat row_dft;
+		performDFT(one_row, row_dft);
 
-		Mat planes[] = { Mat_<float>(paddedRow), Mat::zeros(paddedRow.size(), CV_32F) };
-		Mat complexI;
-		cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
-
-		cv::dft(complexI, complexI);
+		cv::Mat planes[2];
 
 		Mat magI;										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-		cv::split(complexI, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+		cv::split(row_dft, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
 		cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
 
 		magI += Scalar::all(1);							// switch to logarithmic scale
 		cv::log(magI, magI);
 
 		write1ChannelToString(magI, oss);
-
-		magI = magI(Rect(0, 0, magI.cols & -2, magI.rows & -2));	// crop the spectrum, if it has an odd number of rows or columns
 	}
 
 	std::string fname("C:/Temp/LineWiseImage.log");
@@ -216,22 +228,10 @@ void linewiseIterate(cv::Mat& image)
 }
 
 
-void performDFT(cv::Mat& source, cv::Mat& target) 
-{
-	cv::Mat paddedImage;								// expand input image to optimal size
-	int m = cv::getOptimalDFTSize(source.rows);
-	int n = cv::getOptimalDFTSize(source.cols);		// on the border add zero values
-	cv::copyMakeBorder(source, paddedImage, 0, m - source.rows, 0, n - source.cols, BORDER_CONSTANT, Scalar::all(0));
-
-	cv::Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
-
-	cv::Mat complexI;
-	cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
-	cv::dft(complexI, target, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
-}
-
 std::vector<unsigned short> readRawImage(const char* filename, bool swap = false)
 {
+	double t = (double)getTickCount();
+
 	std::ifstream fin(filename, std::ios::binary | std::ios::ate);
 	std::ifstream::pos_type pos = fin.tellg();
 	std::vector<unsigned short> result(pos / 2);	// 16 bits
@@ -246,6 +246,9 @@ std::vector<unsigned short> readRawImage(const char* filename, bool swap = false
 			item = _byteswap_ushort(item);
 		}
 	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "read raw image in seconds: " << t << endl;
 
 	return result;
 }
@@ -285,7 +288,15 @@ void showDFT(const char* label, cv::Mat& source, cv::Size size = cv::Size(), boo
 	showImage(label, dftMagnitude, size);
 }
 
+void performFilter(cv::Mat& source, cv::Mat& target) 
+{
+	double t = (double)getTickCount();
 
+	// ...
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "filter dft in seconds: " << t << endl;
+}
 
 int main(int argc, char ** argv)
 {
@@ -293,6 +304,7 @@ int main(int argc, char ** argv)
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
 	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
+	const char* outname = "c:/Develop/DICOM/Bilder/PE_Image.result.png";
 
 	auto data = readRawImage(filename, false);
 
@@ -304,19 +316,30 @@ int main(int argc, char ** argv)
 	showImage("Float Data Image", floatImage, screen);
 
 	cv::Mat dftImage;
-	performDFT(floatImage, dftImage);
+	performDFT(floatImage, dftImage);	// 2D DFT
 
-	showDFT("DFT complex", dftImage, screen);
-	showDFT("DFT complex rearranged", dftImage, screen, true);
+	lineByLineIterate(floatImage);		// 1D DFT ???
+
+	showDFT("DFT complex Image", dftImage, screen, false);
+	showDFT("DFT centered Image", dftImage, screen, true);
+
+	cv::Mat gaussian;
+	createGaussian(cv::Size(256, 256), gaussian, 256 / 2, 256 / 2, 10, 10);
+	showImage("Gaussian Filter Mask", gaussian);
 
 	cv::Mat filterImage;
-
+	performFilter(dftImage, filterImage);
 
 	cv::Mat inverted;
 	invertDFT(dftImage, inverted);
 	showImage("DFT inverted", inverted, screen);
 
-	////fullImageIterate(image);		// DFT
+	//cv::Mat converted;
+	//inverted.convertTo(converted, CV_8U/*, 1.0 / 256.0*/);
+	//vector<int> compression_params;
+	//compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	//compression_params.push_back(5);	// default 3
+	//cv::imwrite(outname, converted/*, compression_params*/);
 
 	return 0;
 }
