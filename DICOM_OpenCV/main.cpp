@@ -9,6 +9,7 @@
 #include <fstream>
 #include <climits>
 #include <intrin.h>
+#include <cmath>
 
 using namespace cv;
 using namespace std;
@@ -294,6 +295,8 @@ void performFilter(cv::Mat& source, cv::Mat& target)
 
 	// ...
 
+	
+
 	t = ((double)getTickCount() - t) / getTickFrequency();
 	cout << "filter dft in seconds: " << t << endl;
 }
@@ -318,7 +321,7 @@ int main(int argc, char ** argv)
 	cv::Mat dftImage;
 	performDFT(floatImage, dftImage);	// 2D DFT
 
-	lineByLineIterate(floatImage);		// 1D DFT ???
+	//lineByLineIterate(floatImage);		// 1D DFT ???
 
 	showDFT("DFT complex Image", dftImage, screen, false);
 	showDFT("DFT centered Image", dftImage, screen, true);
@@ -339,7 +342,7 @@ int main(int argc, char ** argv)
 	//vector<int> compression_params;
 	//compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
 	//compression_params.push_back(5);	// default 3
-	//cv::imwrite(outname, converted/*, compression_params*/);
+	cv::imwrite(outname, inverted/*, compression_params*/);
 
 	return 0;
 }

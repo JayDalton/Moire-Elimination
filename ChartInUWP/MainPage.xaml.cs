@@ -96,7 +96,7 @@ namespace ChartInUWP
 
           var softwareBitmapeSource = new SoftwareBitmapSource();
           await softwareBitmapeSource.SetBitmapAsync(softwareBitmap);
-          GreyImage.Source = softwareBitmapeSource;
+          //GreyImage.Source = softwareBitmapeSource;
         }
 
         LoadProgress.IsActive = false;
@@ -165,7 +165,7 @@ namespace ChartInUWP
       {
         int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
         int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
-        var values = _data[MovingVerticalValue].GetRange(index, count);
+        var values = _data[MovingVerticalValue]/*.GetRange(index, count)*/;
         _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, maxInputValue, minInputValue);
       }
       _chartRenderer.RenderAxes(GraphCanvas, args, maxInputValue);
@@ -191,6 +191,36 @@ namespace ChartInUWP
     private async void LoadRawBitmapButton(object sender, RoutedEventArgs e)
     {
       await RenderRawImage();
+    }
+
+    private void ScrollViewer_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+      if (sender is ScrollViewer)
+      {
+        var viewer = sender as ScrollViewer;
+        var point = e.GetCurrentPoint(viewer);
+
+        if (point.Properties.MouseWheelDelta == (-120))
+        {
+          // On Mouse Wheel scroll Backward
+          viewer.ChangeView(null, viewer.VerticalOffset + Window.Current.CoreWindow.Bounds.Height / 7, null, false);
+        }
+        if (point.Properties.MouseWheelDelta == (120))
+        {
+          // On Mouse Wheel scroll Forward
+          viewer.ChangeView(null, viewer.VerticalOffset - Window.Current.CoreWindow.Bounds.Height / 7, null, false);
+        }
+      }
+    }
+
+    private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+
+    }
+
+    private void GraphScaleY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+
     }
   }
 
@@ -242,18 +272,26 @@ namespace ChartInUWP
       args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
     }
 
-    public void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY, double minY)
+    public void RenderData(
+      CanvasControl canvas, CanvasDrawEventArgs args, Color color, 
+      float thickness, List<double> data, bool renderArea, 
+      double maxY, double minY
+      )
     {
       if (data.Count == 0) return;
 
+      float scaleX = 1.0f;
+
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
+        //cpb.BeginFigure(new Vector2(0, (float)(data[0])));
         cpb.BeginFigure(new Vector2(0, (float)(canvas.ActualHeight - data[0] * canvas.ActualHeight / maxY)));
         //cpb.BeginFigure(new Vector2(0, (float)(data[0] * canvas.ActualHeight / maxY)));
 
         for (int i = 1; i < data.Count; i++)
         {
-          cpb.AddLine(new Vector2(i, (float)(canvas.ActualHeight - data[i] * canvas.ActualHeight / maxY)));
+          //cpb.AddLine(new Vector2(i, (float)(data[i])));
+          cpb.AddLine(new Vector2(i * scaleX, (float)(canvas.ActualHeight - data[i] * canvas.ActualHeight / maxY)));
           //cpb.AddLine(new Vector2(i, (float)(data[i] * canvas.ActualHeight / maxY)));
         }
 

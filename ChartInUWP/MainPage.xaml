@@ -14,10 +14,14 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <canvas:CanvasControl 
-            x:Name="GraphCanvas" 
-            Margin="5" Grid.Row="0"
-            Draw="OnDrawGraph" />
+        <ScrollViewer PointerWheelChanged="ScrollViewer_PointerWheelChanged"
+            Grid.Row="0" ZoomMode="Enabled"
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto" 
+            HorizontalScrollMode="Enabled"
+            VerticalScrollMode="Enabled">
+            <canvas:CanvasControl x:Name="GraphCanvas" Draw="OnDrawGraph" />
+        </ScrollViewer>
 
         <ProgressRing x:Name="LoadProgress" Width="50" Height="50"/>
 
@@ -25,16 +29,31 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-                <TextBlock Text="Breite"/>
-                <Slider x:Name="MovingHorizontalSlider" ValueChanged="MovingHorizontalSlider_ValueChanged" SmallChange="1"/>
-                <TextBlock Text="Zeilen"/>
-                <Slider x:Name="MovingVerticalSlider" ValueChanged="MovingVerticalSlider_ValueChanged" SmallChange="1"/>
-                <Button Content="Load Graph Data" Click="Button_Click"/>
-                <Button Content="Load RAW Bitmap" Click="LoadRawBitmapButton"/>
+                <Slider 
+                    x:Name="GraphScaleX" Header="Scale X" 
+                    Minimum="1" Maximum="10" Value="1"
+                    ValueChanged="GraphScaleX_ValueChanged"/>
+                <Slider 
+                    x:Name="MovingHorizontalSlider" Header="Move X" 
+                    ValueChanged="MovingHorizontalSlider_ValueChanged"/>
             </StackPanel>
-            <Image x:Name="GreyImage" Grid.Column="1" Width="200" Height="200"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Slider 
+                    x:Name="GraphScaleY" Header="Scale" 
+                    Orientation="Vertical" IsDirectionReversed="True" 
+                    ValueChanged="GraphScaleY_ValueChanged"/>
+                <Slider 
+                    x:Name="MovingVerticalSlider" Header="Move" 
+                    Orientation="Vertical" IsDirectionReversed="True" 
+                    ValueChanged="MovingVerticalSlider_ValueChanged"/>
+            </StackPanel>
+            <Grid Grid.Column="2">
+                <Button Content="Load Graph Data" Click="Button_Click" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </Grid>
+            <!--<Image x:Name="GreyImage" Grid.Column="1" Width="200" Height="200"/>-->
         </Grid>
     </Grid>
 </Page>
