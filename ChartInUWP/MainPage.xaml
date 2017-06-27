@@ -9,51 +9,136 @@
     mc:Ignorable="d" Loaded="Page_Loaded">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
 
-        <ScrollViewer PointerWheelChanged="ScrollViewer_PointerWheelChanged"
+        <!--<ScrollViewer PointerWheelChanged="ScrollViewer_PointerWheelChanged"
             Grid.Row="0" ZoomMode="Enabled"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto" 
             HorizontalScrollMode="Enabled"
             VerticalScrollMode="Enabled">
-            <canvas:CanvasControl x:Name="GraphCanvas" Draw="OnDrawGraph" />
-        </ScrollViewer>
+        </ScrollViewer>-->
+        <canvas:CanvasControl 
+            x:Name="GraphCanvas" 
+            Grid.Row="0" Grid.Column="0" 
+            Draw="OnDrawGraph" Margin="5"/>
 
-        <ProgressRing x:Name="LoadProgress" Width="50" Height="50"/>
+        <ProgressRing 
+            x:Name="LoadProgress" 
+            Grid.Row="0" Grid.Column="0" 
+            Width="50" Height="50"/>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Grid.Column="0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <Button 
+                Grid.Row="0" Grid.Column="0" 
+                VerticalAlignment="Stretch">
+                <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Slider 
+                x:Name="GraphScaleX" 
+                Grid.Row="0" Grid.Column="1" Header="Scale X" 
+                Minimum="1" Maximum="10" Value="1" Margin="10, 0"
+                ValueChanged="GraphScaleX_ValueChanged"/>
+
+            <Button 
+                Grid.Row="0" Grid.Column="2" 
+                VerticalAlignment="Stretch">
+                <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Button 
+                Grid.Row="1" Grid.Column="0" 
+                VerticalAlignment="Stretch">
+                <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Slider 
+                x:Name="MovingHorizontalSlider" 
+                Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"
+                ValueChanged="MovingHorizontalSlider_ValueChanged"/>
+
+            <Button 
+                Grid.Row="1" Grid.Column="2" 
+                VerticalAlignment="Stretch">
+                <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.Column="1">
+            <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <Slider 
-                    x:Name="GraphScaleX" Header="Scale X" 
-                    Minimum="1" Maximum="10" Value="1"
-                    ValueChanged="GraphScaleX_ValueChanged"/>
-                <Slider 
-                    x:Name="MovingHorizontalSlider" Header="Move X" 
-                    ValueChanged="MovingHorizontalSlider_ValueChanged"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Slider 
-                    x:Name="GraphScaleY" Header="Scale" 
-                    Orientation="Vertical" IsDirectionReversed="True" 
-                    ValueChanged="GraphScaleY_ValueChanged"/>
-                <Slider 
-                    x:Name="MovingVerticalSlider" Header="Move" 
-                    Orientation="Vertical" IsDirectionReversed="True" 
-                    ValueChanged="MovingVerticalSlider_ValueChanged"/>
-            </StackPanel>
-            <Grid Grid.Column="2">
-                <Button Content="Load Graph Data" Click="Button_Click" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </Grid>
-            <!--<Image x:Name="GreyImage" Grid.Column="1" Width="200" Height="200"/>-->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Button 
+                Grid.Row="0" Grid.Column="0" 
+                HorizontalAlignment="Stretch">
+                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Slider 
+                x:Name="GraphScaleY"  Header="Scale"
+                Grid.Row="1" Grid.Column="0" Margin="0, 10"
+                Orientation="Vertical" IsDirectionReversed="True" 
+                ValueChanged="GraphScaleY_ValueChanged"/>
+
+            <Button 
+                Grid.Row="2" Grid.Column="0" 
+                HorizontalAlignment="Stretch">
+                <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Button 
+                Grid.Row="0" Grid.Column="1" 
+                HorizontalAlignment="Stretch">
+                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
+
+            <Slider 
+                x:Name="MovingVerticalSlider" Header="Move"  
+                Grid.Row="1" Grid.Column="1" Margin="0, 10"
+                Orientation="Vertical" IsDirectionReversed="True" 
+                ValueChanged="MovingVerticalSlider_ValueChanged"/>
+
+            <Button 
+                Grid.Row="2" Grid.Column="1" 
+                HorizontalAlignment="Stretch">
+                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
+            </Button>
         </Grid>
+
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Button 
+                Content="Load Data" 
+                Click="Button_Click" 
+                Background="OrangeRed"
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch"/>
+        </Grid>
+        <!--<Image x:Name="GreyImage" Grid.Column="1" Width="200" Height="200"/>-->
     </Grid>
 </Page>

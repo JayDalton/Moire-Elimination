@@ -163,8 +163,8 @@ namespace ChartInUWP
       args.DrawingSession.Clear(Colors.White);
       if (_data.ContainsKey(MovingVerticalValue))
       {
-        int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
-        int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
+        //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
+        //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
         var values = _data[MovingVerticalValue]/*.GetRange(index, count)*/;
         _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, maxInputValue, minInputValue);
       }
@@ -280,7 +280,7 @@ namespace ChartInUWP
     {
       if (data.Count == 0) return;
 
-      float scaleX = 1.0f;
+      float scaleX = (float)canvas.ActualWidth / data.Count;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
