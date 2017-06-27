@@ -48,6 +48,8 @@
             </Grid.RowDefinitions>
             
             <Button 
+                x:Name="GraphScaleXDecrease"
+                Click="GraphScaleXDecrease_Click"
                 Grid.Row="0" Grid.Column="0" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
@@ -60,23 +62,29 @@
                 ValueChanged="GraphScaleX_ValueChanged"/>
 
             <Button 
+                x:Name="GraphScaleXIncrease"
+                Click="GraphScaleXIncrease_Click"
                 Grid.Row="0" Grid.Column="2" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
 
             <Button 
+                x:Name="GraphMoveXDecrease"
+                Click="GraphMoveXDecrease_Click"
                 Grid.Row="1" Grid.Column="0" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
 
             <Slider 
-                x:Name="MovingHorizontalSlider" 
+                x:Name="GraphMoveX" 
                 Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"
-                ValueChanged="MovingHorizontalSlider_ValueChanged"/>
+                ValueChanged="GraphMoveX_ValueChanged"/>
 
             <Button 
+                x:Name="GraphMoveXIncrease"
+                Click="GraphMoveXIncrease_Click"
                 Grid.Row="1" Grid.Column="2" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
@@ -95,6 +103,8 @@
             </Grid.RowDefinitions>
 
             <Button 
+                x:Name="GraphScaleYDecrease"
+                Click="GraphScaleYDecrease_Click"
                 Grid.Row="0" Grid.Column="0" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
@@ -107,27 +117,33 @@
                 ValueChanged="GraphScaleY_ValueChanged"/>
 
             <Button 
+                x:Name="GraphScaleYIncrease"
+                Click="GraphScaleYIncrease_Click"
                 Grid.Row="2" Grid.Column="0" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
 
             <Button 
+                x:Name="GraphMoveYDecrease"
+                Click="GraphMoveYDecrease_Click"
                 Grid.Row="0" Grid.Column="1" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
 
             <Slider 
-                x:Name="MovingVerticalSlider" Header="Move"  
+                x:Name="GraphMoveY" Header="Move"  
                 Grid.Row="1" Grid.Column="1" Margin="0, 10"
                 Orientation="Vertical" IsDirectionReversed="True" 
-                ValueChanged="MovingVerticalSlider_ValueChanged"/>
+                ValueChanged="GraphMoveY_ValueChanged"/>
 
             <Button 
+                x:Name="GraphMoveYIncrease"
+                Click="GraphMoveYIncrease_Click"
                 Grid.Row="2" Grid.Column="1" 
                 HorizontalAlignment="Stretch">
-                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
+                <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
         </Grid>
 

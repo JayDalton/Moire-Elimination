@@ -44,11 +44,11 @@ namespace ChartInUWP
     private readonly Dictionary<int, List<double>> _data;
     private readonly ChartRenderer _chartRenderer;
 
-    int MovingHorizontalValue = default(int);
-    int MovingVerticalValue = default(int);
+    //int MovingHorizontalValue = default(int);
+    //int MovingVerticalValue = default(int);
 
-    double maxInputValue = double.MinValue;
-    double minInputValue = double.MaxValue;
+    //double maxInputValue = double.MinValue;
+    //double minInputValue = double.MaxValue;
 
     public MainPage()
     {
@@ -122,9 +122,10 @@ namespace ChartInUWP
         {
           _data.Clear();
           var rows = default(int);
-          maxInputValue = double.MinValue;
-          minInputValue = double.MaxValue;
+          var maxInputValue = double.MinValue;
+          var minInputValue = double.MaxValue;
           var content = await FileIO.ReadLinesAsync(file);
+
           foreach (var line in content)
           {
             var fields = line.Split(';');
@@ -137,14 +138,20 @@ namespace ChartInUWP
             minInputValue = Math.Min(minInputValue, values.Min());
             _data.Add(rows++, values);
           }
+
           if (_data.Count > 0)
           {
-            MovingHorizontalSlider.Value = 0;
-            MovingHorizontalSlider.Minimum = 0;
-            MovingHorizontalSlider.Maximum = _data[0].Count - 1;
-            MovingVerticalSlider.Value = 0;
-            MovingVerticalSlider.Minimum = 0;
-            MovingVerticalSlider.Maximum = _data.Count - 1;
+            GraphMoveY.Value = 0;
+            GraphMoveY.Minimum = 0;
+            GraphMoveY.Maximum = _data.Count - 1;
+
+            GraphScaleY.Value = minInputValue;
+            GraphScaleY.Minimum = minInputValue;
+            GraphScaleY.Maximum = maxInputValue;
+
+            GraphMoveX.Value = 0;
+            GraphMoveX.Minimum = 0;
+            GraphMoveX.Maximum = _data[0].Count - 1;
             GraphCanvas.Invalidate();
           }
         }
@@ -158,29 +165,88 @@ namespace ChartInUWP
       }
     }
 
-    private void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
+    private void GraphMoveY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
-      args.DrawingSession.Clear(Colors.White);
-      if (_data.ContainsKey(MovingVerticalValue))
+      GraphCanvas.Invalidate();
+    }
+
+    private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (GraphMoveY.Value < GraphMoveY.Maximum)
       {
-        //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
-        //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
-        var values = _data[MovingVerticalValue]/*.GetRange(index, count)*/;
-        _chartRenderer.RenderData(GraphCanvas, args, Colors.Black, DataStrokeThickness, values, false, maxInputValue, minInputValue);
+        GraphMoveY.Value++; 
       }
-      _chartRenderer.RenderAxes(GraphCanvas, args, maxInputValue);
     }
 
-    private void MovingHorizontalSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    private void GraphMoveYDecrease_Click(object sender, RoutedEventArgs e)
     {
-      MovingHorizontalValue = (int)e.NewValue;
+      if (0 < GraphMoveY.Value)
+      {
+        GraphMoveY.Value--;
+      }
+    }
+
+    private void GraphScaleY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
       GraphCanvas.Invalidate();
     }
 
-    private void MovingVerticalSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    private void GraphScaleYDecrease_Click(object sender, RoutedEventArgs e)
     {
-      MovingVerticalValue = (int)e.NewValue;
+      if (0 < GraphScaleY.Value)
+      {
+        GraphScaleY.Value--;
+      }
+    }
+
+    private void GraphScaleYIncrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (GraphScaleY.Value < GraphScaleY.Maximum)
+      {
+        GraphScaleY.Value++;
+      }
+    }
+
+    private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
       GraphCanvas.Invalidate();
+    }
+
+    private void GraphScaleXIncrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (GraphScaleX.Value < GraphScaleX.Maximum)
+      {
+        GraphScaleX.Value++;
+      }
+    }
+
+    private void GraphScaleXDecrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (0 < GraphScaleX.Value)
+      {
+        GraphScaleX.Value--;
+      }
+    }
+
+    private void GraphMoveX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+      GraphCanvas.Invalidate();
+    }
+
+    private void GraphMoveXIncrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (GraphMoveX.Value < GraphMoveX.Maximum)
+      {
+        GraphMoveX.Value++;
+      }
+    }
+
+    private void GraphMoveXDecrease_Click(object sender, RoutedEventArgs e)
+    {
+      if (0 < GraphMoveX.Value)
+      {
+        GraphMoveX.Value--;
+      }
     }
 
     private async void Button_Click(object sender, RoutedEventArgs e)
@@ -193,35 +259,22 @@ namespace ChartInUWP
       await RenderRawImage();
     }
 
-    private void ScrollViewer_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    private void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
-      if (sender is ScrollViewer)
+      args.DrawingSession.Clear(Colors.White);
+      if (_data.ContainsKey((int)GraphMoveY.Value))
       {
-        var viewer = sender as ScrollViewer;
-        var point = e.GetCurrentPoint(viewer);
-
-        if (point.Properties.MouseWheelDelta == (-120))
-        {
-          // On Mouse Wheel scroll Backward
-          viewer.ChangeView(null, viewer.VerticalOffset + Window.Current.CoreWindow.Bounds.Height / 7, null, false);
-        }
-        if (point.Properties.MouseWheelDelta == (120))
-        {
-          // On Mouse Wheel scroll Forward
-          viewer.ChangeView(null, viewer.VerticalOffset - Window.Current.CoreWindow.Bounds.Height / 7, null, false);
-        }
+        //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
+        //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
+        var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
+        _chartRenderer.RenderData(
+          GraphCanvas, args, Colors.Black, DataStrokeThickness, 
+          values, false, GraphScaleY.Value, 0
+          );
       }
+      _chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value);
     }
 
-    private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-
-    }
-
-    private void GraphScaleY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-
-    }
   }
 
   class ChartRenderer
