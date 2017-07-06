@@ -44,12 +44,6 @@ namespace ChartInUWP
     private readonly Dictionary<int, List<double>> _data;
     private readonly ChartRenderer _chartRenderer;
 
-    //int MovingHorizontalValue = default(int);
-    //int MovingVerticalValue = default(int);
-
-    //double maxInputValue = double.MinValue;
-    //double minInputValue = double.MaxValue;
-
     public MainPage()
     {
       this.InitializeComponent();
@@ -60,13 +54,79 @@ namespace ChartInUWP
     private async void Page_Loaded(object sender, RoutedEventArgs e)
     {
       //RenderRawImage();
-      await ReadInputData();
+      //await ReadInputData();
+    }
+
+    private async Task<byte[]> getByteArrayFromStream(IRandomAccessStream stream, bool swap = false)
+    {
+      var result = new byte[stream.Size];
+      if (swap)
+      {
+        using (var output = new InMemoryRandomAccessStream())
+        {
+          using (var reader = new DataReader(stream.GetInputStreamAt(0)))
+          {
+            //reader.ByteOrder = ByteOrder.LittleEndian;
+            using (var writer = new DataWriter(output))
+            {
+              //writer.ByteOrder = ByteOrder.BigEndian;
+              await reader.LoadAsync((uint)stream.Size);
+              while (0 < reader.UnconsumedBufferLength)
+              {
+                var number = reader.ReadUInt16();
+                var bytes_number = BitConverter.GetBytes(number);
+                writer.WriteBytes(bytes_number);
+              }
+              await writer.StoreAsync();
+              await writer.FlushAsync();
+              writer.DetachStream();
+              output.Seek(0);
+            }
+            reader.DetachStream();
+          }
+          await output.ReadAsync(result.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
+          var folder = await DownloadsFolder.CreateFileAsync(DateTime.UtcNow.Ticks + ".out");
+          using (var file = await folder.OpenStreamForWriteAsync())
+          {
+            await file.WriteAsync(result, 0, result.Length);
+            await file.FlushAsync();
+          }
+        }
+      }
+      else
+      {
+        await stream.ReadAsync(result.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
+      }
+      return result;
+    }
+
+    private async Task setImageSource(Image image, byte[] bytes)
+    {
+      const int WIDTH = 4318;
+      const int HEIGHT = 4320;
+
+      var softwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Gray16, WIDTH, HEIGHT);
+      softwareBitmap.CopyFromBuffer(bytes.AsBuffer());
+
+      if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
+          softwareBitmap.BitmapAlphaMode == BitmapAlphaMode.Straight)
+      {
+        softwareBitmap = SoftwareBitmap.Convert(
+          softwareBitmap,
+          BitmapPixelFormat.Bgra8,
+          BitmapAlphaMode.Premultiplied
+        );
+      }
+
+      var softwareBitmapeSource = new SoftwareBitmapSource();
+      await softwareBitmapeSource.SetBitmapAsync(softwareBitmap);
+      image.Source = softwareBitmapeSource;
     }
 
     private async Task RenderRawImage()
     {
-      const int WIDTH = 4318;
-      const int HEIGHT = 4320;
+      //const int WIDTH = 4318;
+      //const int HEIGHT = 4320;
       var picker = new FileOpenPicker();
       picker.ViewMode = PickerViewMode.List;
       picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
@@ -79,24 +139,11 @@ namespace ChartInUWP
         LoadProgress.Visibility = Visibility.Visible;
         using (var stream = await file.OpenAsync(FileAccessMode.Read))
         {
-          var bytes = new byte[stream.Size];
-          await stream.ReadAsync(bytes.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
-          var softwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Gray16, WIDTH, HEIGHT);
-          softwareBitmap.CopyFromBuffer(bytes.AsBuffer());
+          var endian = await getByteArrayFromStream(stream, true);
+          var normal = await getByteArrayFromStream(stream);
 
-          if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
-              softwareBitmap.BitmapAlphaMode == BitmapAlphaMode.Straight)
-          {
-            softwareBitmap = SoftwareBitmap.Convert(
-              softwareBitmap, 
-              BitmapPixelFormat.Bgra8, 
-              BitmapAlphaMode.Premultiplied
-            );
-          }
-
-          var softwareBitmapeSource = new SoftwareBitmapSource();
-          await softwareBitmapeSource.SetBitmapAsync(softwareBitmap);
-          //GreyImage.Source = softwareBitmapeSource;
+          await setImageSource(GreyImageLeft, normal);
+          await setImageSource(GreyImageRight, endian);
         }
 
         LoadProgress.IsActive = false;
@@ -141,17 +188,24 @@ namespace ChartInUWP
 
           if (_data.Count > 0)
           {
-            GraphMoveY.Value = 0;
-            GraphMoveY.Minimum = 0;
             GraphMoveY.Maximum = _data.Count - 1;
+            GraphMoveY.Minimum = 0;
+            GraphMoveY.Value = 0;
 
-            GraphScaleY.Value = minInputValue;
-            GraphScaleY.Minimum = minInputValue;
             GraphScaleY.Maximum = maxInputValue;
+            GraphScaleY.Minimum = minInputValue;
+            GraphScaleY.Value = maxInputValue;
 
-            GraphMoveX.Value = 0;
-            GraphMoveX.Minimum = 0;
             GraphMoveX.Maximum = _data[0].Count - 1;
+            GraphMoveX.Minimum = 0;
+            GraphMoveX.Value = 0;
+
+            GraphScaleX.Maximum = 2;    // 
+            GraphScaleX.Minimum = GraphCanvas.ActualWidth / _data[0].Count;    // da passt ALLES rein
+            GraphScaleX.Value = GraphCanvas.ActualWidth / _data[0].Count;
+            GraphScaleX.SnapsTo = SliderSnapsTo.StepValues;
+            GraphScaleX.StepFrequency = Math.Abs(GraphScaleX.Maximum - GraphScaleX.Minimum) / 10;
+
             GraphCanvas.Invalidate();
           }
         }
@@ -209,6 +263,8 @@ namespace ChartInUWP
 
     private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
+      var x = e.NewValue;
+
       GraphCanvas.Invalidate();
     }
 
@@ -249,13 +305,17 @@ namespace ChartInUWP
       }
     }
 
-    private async void Button_Click(object sender, RoutedEventArgs e)
+    private async void LoadDataButton_Click(object sender, RoutedEventArgs e)
     {
+      GraphCanvas.Visibility = Visibility.Visible;
+      GreyImageGrid.Visibility = Visibility.Collapsed;
       await ReadInputData();
     }
 
-    private async void LoadRawBitmapButton(object sender, RoutedEventArgs e)
+    private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
     {
+      GraphCanvas.Visibility = Visibility.Collapsed;
+      GreyImageGrid.Visibility = Visibility.Visible;
       await RenderRawImage();
     }
 
@@ -269,12 +329,33 @@ namespace ChartInUWP
         var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
         _chartRenderer.RenderData(
           GraphCanvas, args, Colors.Black, DataStrokeThickness, 
-          values, false, GraphScaleY.Value, 0
+          values, false, GraphScaleY.Value, GraphScaleX.Value
           );
       }
       _chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value);
     }
 
+    // reverse byte order (16-bit)
+    public static UInt16 ReverseBytes(UInt16 value)
+    {
+      return (UInt16)((value & 0xFFU) << 8 | (value & 0xFF00U) >> 8);
+    }
+
+    // reverse byte order (32-bit)
+    public static UInt32 ReverseBytes(UInt32 value)
+    {
+      return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 |
+             (value & 0x00FF0000U) >>  8 | (value & 0xFF000000U) >> 24;
+    }
+
+    // reverse byte order (64-bit)
+    public static UInt64 ReverseBytes(UInt64 value)
+    {
+      return (value & 0x00000000000000FFUL) << 56 | (value & 0x000000000000FF00UL) << 40 |
+             (value & 0x0000000000FF0000UL) << 24 | (value & 0x00000000FF000000UL) <<  8 |
+             (value & 0x000000FF00000000UL) >>  8 | (value & 0x0000FF0000000000UL) >> 24 |
+             (value & 0x00FF000000000000UL) >> 40 | (value & 0xFF00000000000000UL) >> 56;
+    }
   }
 
   class ChartRenderer
@@ -328,24 +409,27 @@ namespace ChartInUWP
     public void RenderData(
       CanvasControl canvas, CanvasDrawEventArgs args, Color color, 
       float thickness, List<double> data, bool renderArea, 
-      double maxY, double minY
+      double maxY, double scaleX
       )
     {
       if (data.Count == 0) return;
 
-      float scaleX = (float)canvas.ActualWidth / data.Count;
-
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
-        //cpb.BeginFigure(new Vector2(0, (float)(data[0])));
-        cpb.BeginFigure(new Vector2(0, (float)(canvas.ActualHeight - data[0] * canvas.ActualHeight / maxY)));
-        //cpb.BeginFigure(new Vector2(0, (float)(data[0] * canvas.ActualHeight / maxY)));
+        cpb.BeginFigure(
+          new Vector2(0, 
+            (float)(/*canvas.ActualHeight - */data[0] * canvas.ActualHeight / maxY)
+          )
+        );
 
         for (int i = 1; i < data.Count; i++)
         {
-          //cpb.AddLine(new Vector2(i, (float)(data[i])));
-          cpb.AddLine(new Vector2(i * scaleX, (float)(canvas.ActualHeight - data[i] * canvas.ActualHeight / maxY)));
-          //cpb.AddLine(new Vector2(i, (float)(data[i] * canvas.ActualHeight / maxY)));
+          cpb.AddLine(
+            new Vector2(
+              i * (float)scaleX, 
+              (float)(/*canvas.ActualHeight - */data[i] * canvas.ActualHeight / maxY)
+            )
+          );
         }
 
         if (renderArea)

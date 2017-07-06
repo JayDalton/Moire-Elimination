@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <climits>
+#include <cfloat>
 #include <intrin.h>
 #include <cmath>
 
@@ -188,17 +189,60 @@ void performDFT(cv::Mat& source, cv::Mat& target)
 	cv::dft(complexI, target, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "perform DFT in seconds: " << t << endl;
+	//cout << "perform DFT in seconds: " << t << endl;
 }
 
-void lineByLineIterate(cv::Mat& image)
+void lineDftInvert(cv::Mat& source, cv::Mat& target)
+{
+	double t = (double)getTickCount();
+
+	for (int row = 0; row < source.rows; ++row)
+	{
+		cv::Mat one_row = source.row(row);
+
+		cv::Mat inverse;
+		cv::dft(one_row, inverse, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+		target.push_back(inverse);
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "line dft invert: " << t << endl;
+}
+
+void lineDftPerfom(cv::Mat& source, cv::Mat& target) 
+{
+	double t = (double)getTickCount();
+	for (int row = 0; row < source.rows; ++row)
+	{
+		cv::Mat one_row = source.row(row);
+
+		cv::Mat paddedLine;								// expand input image to optimal size
+		int m = cv::getOptimalDFTSize(one_row.rows);
+		int n = cv::getOptimalDFTSize(one_row.cols);		// on the border add zero values
+		cv::copyMakeBorder(one_row, paddedLine, 0, m - one_row.rows, 0, n - one_row.cols, BORDER_CONSTANT, Scalar::all(0));
+
+		cv::Mat linePlanes[] = { Mat_<float>(paddedLine), Mat::zeros(paddedLine.size(), CV_32F) };
+
+		cv::Mat complexLine;
+		cv::merge(linePlanes, 2, complexLine);					// Add to the expanded another plane with zeros
+
+		cv::dft(complexLine, complexLine, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
+
+		target.push_back(complexLine);
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "line dft perform: " << t << endl;
+}
+
+void lineByLineIterate(cv::Mat& source, cv::Mat& target)
 {
 	double t = (double)getTickCount();
 
 	std::ostringstream oss;
-	for (int row = 0; row < image.rows; ++row)
+	for (int row = 0; row < source.rows; ++row)
 	{
-		cv::Mat one_row = image.row(row);
+		cv::Mat one_row = source.row(row);
 
 		cv::Mat row_dft;
 		performDFT(one_row, row_dft);
@@ -249,7 +293,7 @@ std::vector<unsigned short> readRawImage(const char* filename, bool swap = false
 	}
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "read raw image in seconds: " << t << endl;
+	cout << "read raw endian: " << t << endl;
 
 	return result;
 }
@@ -307,7 +351,28 @@ int main(int argc, char ** argv)
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
 	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
+	//const char* filename = "c:/Develop/DICOM/BilderRaw/Tisch1.le.raw";
+	const char* filenames[] = {
+		"c:/Develop/DICOM/BilderRaw/Tisch1.out",
+		"c:/Develop/DICOM/BilderRaw/Tisch2.out",
+		"c:/Develop/DICOM/BilderRaw/Tisch3.out",
+		"c:/Develop/DICOM/BilderRaw/Wand1.out",
+		"c:/Develop/DICOM/BilderRaw/Wand2.out",
+		"c:/Develop/DICOM/BilderRaw/Wand3.out"
+	};
+	//const char* filename1 = "c:/Develop/DICOM/BilderRaw/Tisch1.raw";
+	//const char* filename2 = "c:/Develop/DICOM/BilderRaw/Tisch2.raw";
+	//const char* filename3 = "c:/Develop/DICOM/BilderRaw/Tisch3.raw";
+	//const char* filename4 = "c:/Develop/DICOM/BilderRaw/Wand1.raw";
+	//const char* filename5 = "c:/Develop/DICOM/BilderRaw/Wand2.raw";
+	//const char* filename6 = "c:/Develop/DICOM/BilderRaw/Wand3.raw";
 	const char* outname = "c:/Develop/DICOM/Bilder/PE_Image.result.png";
+
+	//for (const auto f : filenames) {
+	//	auto data = readRawImage(f, false);
+	//	cv::Mat shortImage(IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
+	//	showImage("Short Data Image", shortImage, screen);
+	//}
 
 	auto data = readRawImage(filename, false);
 
@@ -316,33 +381,57 @@ int main(int argc, char ** argv)
 
 	cv::Mat floatImage;
 	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
-	showImage("Float Data Image", floatImage, screen);
+	//showImage("Float Data Image", floatImage, screen);
 
 	cv::Mat dftImage;
-	performDFT(floatImage, dftImage);	// 2D DFT
+	lineDftPerfom(floatImage, dftImage);
+	//performDFT(floatImage, dftImage);				// 2D DFT
 
-	//lineByLineIterate(floatImage);		// 1D DFT ???
+	//lineByLineIterate(floatImage, dftImage);		// 1D DFT ???
 
 	showDFT("DFT complex Image", dftImage, screen, false);
 	showDFT("DFT centered Image", dftImage, screen, true);
 
-	cv::Mat gaussian;
-	createGaussian(cv::Size(256, 256), gaussian, 256 / 2, 256 / 2, 10, 10);
-	showImage("Gaussian Filter Mask", gaussian);
+	//cv::Mat gaussian;
+	//createGaussian(cv::Size(256, 256), gaussian, 256 / 2, 256 / 2, 10, 10);
+	//showImage("Gaussian Filter Mask", gaussian);
 
-	cv::Mat filterImage;
-	performFilter(dftImage, filterImage);
+	//cv::Mat filterImage;
+	//performFilter(dftImage, filterImage);
+
+	int chan = dftImage.channels();	// 2
+	int type = dftImage.type();		// 13 - CV_32FC2
 
 	cv::Mat inverted;
-	invertDFT(dftImage, inverted);
-	showImage("DFT inverted", inverted, screen);
+	//invertDFT(dftImage, inverted);
+	lineDftInvert(dftImage, inverted);
+	showImage("DFT inverted float", inverted, screen);
 
-	//cv::Mat converted;
-	//inverted.convertTo(converted, CV_8U/*, 1.0 / 256.0*/);
-	//vector<int> compression_params;
-	//compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-	//compression_params.push_back(5);	// default 3
-	cv::imwrite(outname, inverted/*, compression_params*/);
+	chan = inverted.channels();		// 1
+	type = inverted.type();			// 5 - CV_32FC1
+
+
+	float min = FLT_MAX, max = FLT_MIN;
+	for (int row = 0; row < inverted.rows; ++row)
+	{
+		auto p = inverted.ptr<float>(row);
+		for (int col = 0; col < inverted.cols; ++col)
+		{
+			if (p[col] < min) { min = p[col]; }
+			if (max < p[col]) { max = p[col]; }
+		}
+	}
+
+
+	cv::Mat resultImage;
+	inverted.convertTo(resultImage, CV_16UC1, USHRT_MAX / (max - min), -USHRT_MAX * min / (max - min));
+	showImage("DFT inverted short", resultImage, screen);
+
+	chan = resultImage.channels();		// 1
+	type = resultImage.type();			// 2 - CV_16UC1
+
+	cv::imwrite("c:/Temp/some_name0.pgm", resultImage);
+	cv::imwrite("c:/Temp/some_name0.png", resultImage);
 
 	return 0;
 }

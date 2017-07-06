@@ -31,6 +31,15 @@
             Grid.Row="0" Grid.Column="0" 
             Draw="OnDrawGraph" Margin="5"/>
 
+        <Grid x:Name="GreyImageGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Image x:Name="GreyImageLeft" Grid.Column="0"/>
+            <Image x:Name="GreyImageRight" Grid.Column="1"/>
+        </Grid>
+
         <ProgressRing 
             x:Name="LoadProgress" 
             Grid.Row="0" Grid.Column="0" 
@@ -58,9 +67,9 @@
             <Slider 
                 x:Name="GraphScaleX" 
                 Grid.Row="0" Grid.Column="1" Header="Scale X" 
-                Minimum="1" Maximum="10" Value="1" Margin="10, 0"
+                Maximum="10.0" Minimum="1.0" Margin="10, 0"
                 ValueChanged="GraphScaleX_ValueChanged"/>
-
+            
             <Button 
                 x:Name="GraphScaleXIncrease"
                 Click="GraphScaleXIncrease_Click"
@@ -148,13 +157,24 @@
         </Grid>
 
         <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
             <Button 
+                x:Name="LoadDataButton" Grid.Row="0"
                 Content="Load Data" 
-                Click="Button_Click" 
+                Click="LoadDataButton_Click" 
+                Background="OrangeRed"
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch"/>
+            <Button 
+                x:Name="LoadImageButton" Grid.Row="1"
+                Content="Load Image" 
+                Click="LoadImageButton_Click" 
                 Background="OrangeRed"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
         </Grid>
-        <!--<Image x:Name="GreyImage" Grid.Column="1" Width="200" Height="200"/>-->
     </Grid>
 </Page>
