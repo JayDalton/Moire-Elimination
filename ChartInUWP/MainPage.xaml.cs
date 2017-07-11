@@ -332,7 +332,7 @@ namespace ChartInUWP
           values, false, GraphScaleY.Value, GraphScaleX.Value
           );
       }
-      _chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value);
+      _chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value, GraphScaleX.Value);
     }
 
     // reverse byte order (16-bit)
@@ -360,7 +360,7 @@ namespace ChartInUWP
 
   class ChartRenderer
   {
-    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY)
+    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY, double scaleX, int count = 4320)
     {
       var width = (float)canvas.ActualWidth;
       var height = (float)(canvas.ActualHeight);
@@ -369,41 +369,57 @@ namespace ChartInUWP
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
-        // Horizontal line
-        cpb.BeginFigure(new Vector2(0, midHeight));
-        cpb.AddLine(new Vector2(width, midHeight));
-        cpb.EndFigure(CanvasFigureLoop.Open);
-
-        // Horizontal line arrow
-        cpb.BeginFigure(new Vector2(width - 10, midHeight - 3));
-        cpb.AddLine(new Vector2(width, midHeight));
-        cpb.AddLine(new Vector2(width - 10, midHeight + 3));
-        cpb.EndFigure(CanvasFigureLoop.Open);
-
-        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
+        float tick = 0.0f;
+        for (int idx = 0; idx < count; ++idx)
+        {
+          if (idx % 100 == 0)
+          {
+            cpb.BeginFigure(new Vector2(idx * (float)scaleX, 0));
+            cpb.AddLine(new Vector2(idx * (float)scaleX, 100));
+            cpb.EndFigure(CanvasFigureLoop.Open);
+            tick++;
+          }
+        }
+        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.DarkRed, 1);
       }
 
-      args.DrawingSession.DrawText("0", 5, midHeight - 30, Colors.Gray);
-      args.DrawingSession.DrawText(canvas.ActualWidth.ToString(), width - 50, midHeight - 30, Colors.Gray);
+      //using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      //{
+      //  // Horizontal line
+      //  cpb.BeginFigure(new Vector2(0, midHeight));
+      //  cpb.AddLine(new Vector2(width, midHeight));
+      //  cpb.EndFigure(CanvasFigureLoop.Open);
 
-      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
-      {
-        // Vertical line
-        cpb.BeginFigure(new Vector2(midWidth, 0));
-        cpb.AddLine(new Vector2(midWidth, height));
-        cpb.EndFigure(CanvasFigureLoop.Open);
+      //  // Horizontal line arrow
+      //  cpb.BeginFigure(new Vector2(width - 10, midHeight - 3));
+      //  cpb.AddLine(new Vector2(width, midHeight));
+      //  cpb.AddLine(new Vector2(width - 10, midHeight + 3));
+      //  cpb.EndFigure(CanvasFigureLoop.Open);
 
-        // Vertical line arrow
-        cpb.BeginFigure(new Vector2(midWidth - 3, 10));
-        cpb.AddLine(new Vector2(midWidth, 0));
-        cpb.AddLine(new Vector2(midWidth + 3, 10));
-        cpb.EndFigure(CanvasFigureLoop.Open);
+      //  args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
+      //}
 
-        args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
-      }
+      //args.DrawingSession.DrawText("0", 5, midHeight - 30, Colors.Gray);
+      //args.DrawingSession.DrawText(canvas.ActualWidth.ToString(), width - 50, midHeight - 30, Colors.Gray);
 
-      args.DrawingSession.DrawText("0", midWidth + 5, height - 30, Colors.Gray);
-      args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
+      //using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      //{
+      //  // Vertical line
+      //  cpb.BeginFigure(new Vector2(midWidth, 0));
+      //  cpb.AddLine(new Vector2(midWidth, height));
+      //  cpb.EndFigure(CanvasFigureLoop.Open);
+
+      //  // Vertical line arrow
+      //  cpb.BeginFigure(new Vector2(midWidth - 3, 10));
+      //  cpb.AddLine(new Vector2(midWidth, 0));
+      //  cpb.AddLine(new Vector2(midWidth + 3, 10));
+      //  cpb.EndFigure(CanvasFigureLoop.Open);
+
+      //  args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), Colors.Gray, 1);
+      //}
+
+      //args.DrawingSession.DrawText("0", midWidth + 5, height - 30, Colors.Gray);
+      //args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
     }
 
     public void RenderData(

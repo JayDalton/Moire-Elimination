@@ -45,6 +45,34 @@ void invertDFT(cv::Mat& source, cv::Mat& target)
 	target = inverse;
 }
 
+double pixelDistance(double u, double v)
+{
+	return cv::sqrt(u*u + v*v);
+}
+
+double gaussianCoeff(double u, double v, double d0)
+{
+	double d = pixelDistance(u, v);
+	return 1.0 - cv::exp((-d*d) / (2 * d0*d0));
+}
+
+cv::Mat createGaussianHighPassFilter(cv::Size size, float cutoffInPixels)
+{
+	Mat ghpf(size, CV_32F);
+
+	cv::Point center(size.width / 2, size.height / 2);
+
+	for (int u = 0; u < ghpf.rows; u++)
+	{
+		for (int v = 0; v < ghpf.cols; v++)
+		{
+			ghpf.at<float>(u, v) = gaussianCoeff(u - center.y, v - center.x, cutoffInPixels);
+		}
+	}
+
+	return ghpf;
+}
+
 void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigmaX, float sigmaY, float amplitude = 1.0) 
 {
 	cv::Mat temp = cv::Mat(size, CV_32F);
@@ -61,6 +89,53 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 	}
 	cv::normalize(temp, temp, 0.0f, 1.0f, cv::NORM_MINMAX);
 	output = temp;
+}
+
+// create a 2-channel butterworth low-pass filter with radius D, order n
+// (assumes pre-aollocated size of dft_Filter specifies dimensions)
+void createButterworthLowpassFilter(Mat &dft_Filter, int D, int n)
+{
+	Mat tmp = Mat(dft_Filter.rows, dft_Filter.cols, CV_32F);
+
+	Point centre = Point(dft_Filter.rows / 2, dft_Filter.cols / 2);
+	double radius;
+
+	for (int i = 0; i < dft_Filter.rows; i++)
+	{
+		for (int j = 0; j < dft_Filter.cols; j++)
+		{
+			radius = (double)sqrt(pow((i - centre.x), 2.0) + pow((double)(j - centre.y), 2.0));
+			tmp.at<float>(i, j) = (float)(1 / (1 + pow((double)(radius / D), (double)(2 * n))));
+		}
+	}
+
+	Mat toMerge[] = { tmp, tmp };
+	merge(toMerge, 2, dft_Filter);
+}
+
+void createButterworthHighpassFilter(cv::Mat& dft_filter, int D, int n)
+{
+	Mat tmp = Mat(dft_filter.rows, dft_filter.cols, CV_32F);
+
+	Point centre = Point(dft_filter.rows / 2, dft_filter.cols / 2);
+	double radius;
+
+	for (int i = 0; i < dft_filter.rows; i++)
+	{
+		for (int j = 0; j < dft_filter.cols; j++)
+		{
+			radius = (double)sqrt(pow((i - centre.x), 2.0) + pow((double)(j - centre.y), 2.0));
+			tmp.at<float>(i, j) = (float)(1 / (1 + pow((double)(D / radius), (double)(2 * n))));
+		}
+	}
+
+	Mat toMerge[] = { tmp, tmp };
+	merge(toMerge, 2, dft_filter);
+}
+
+void createGaussianBandstopFilter() 
+{
+	cv::Mat tmp = cv::Mat(1, 1, CV_32F);
 }
 
 void showMagImage(cv::Mat& image)
@@ -235,43 +310,113 @@ void lineDftPerfom(cv::Mat& source, cv::Mat& target)
 	cout << "line dft perform: " << t << endl;
 }
 
-void lineByLineIterate(cv::Mat& source, cv::Mat& target)
+void lineDftFilePrint(cv::Mat& source, const char* filename)
 {
 	double t = (double)getTickCount();
 
 	std::ostringstream oss;
 	for (int row = 0; row < source.rows; ++row)
 	{
-		cv::Mat one_row = source.row(row);
-
-		cv::Mat row_dft;
-		performDFT(one_row, row_dft);
+		cv::Mat dft_row = source.row(row);
 
 		cv::Mat planes[2];
+		cv::split(dft_row, planes);						// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
 
-		Mat magI;										// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-		cv::split(row_dft, planes);					// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+		cv::Mat magI;									// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
 		cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
-
 		magI += Scalar::all(1);							// switch to logarithmic scale
 		cv::log(magI, magI);
 
-		write1ChannelToString(magI, oss);
+		float* p = magI.ptr<float>(0);
+		for (int col = 0; col < magI.cols; ++col)
+		{
+			if (0 < col) oss << ";";
+			oss << p[col];
+		}
+		oss << std::endl;
 	}
 
-	std::string fname("C:/Temp/LineWiseImage.log");
-	std::ofstream logfile(fname, std::ios::binary);
+	std::ofstream logfile(filename, std::ios::binary);
 	if (!logfile.is_open())
 	{
-		std::cout << "Can not open outfile: " << fname << std::endl;
+		std::cout << "Can not open outfile: " << filename << std::endl;
 		return;
 	}
 	logfile << oss.str();
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Linewise iterate in seconds: " << t << endl;
+	cout << "Linewise file print in seconds: " << t << endl;
 }
 
+float calc_f_estimate(float fs, float fg)
+{
+	float festimate;
+	if (fs >= 2 * fg)
+	{
+		festimate = fg;
+	}
+	else
+	{
+		float fg_fs = fg / fs;	// 8,4646 / 10.0 = 0,84646 ??? 1,1814
+		float intpart;
+		float fractpart = modf(fg_fs, &intpart);	// 
+		float k = (fractpart < 0.5) ? floor(fg_fs) : ceil(fg_fs);	// 1
+		festimate = abs(fg - k * fs);	// 8,4646 - 1 * 10,0 = 1,5354
+	}
+	return festimate;
+}
+
+void lineDftFilter(cv::Mat& source, cv::Mat& target)
+{
+	double t = (double)getTickCount();
+
+	float fs = 10.0;				// 10px/mm
+	float fg = 215 / 2.54 * 0.1;	// 215px/inch -> ~84,646px/cm -> ~8,4646px/mm
+	float festimate = calc_f_estimate(fs, fg);	// ~1,53
+
+	cv::Mat filter = source.clone();
+	//createButterworthLowpassFilter(filter, source.cols / 12, 1);
+	//lineDftFilePrint(filter, "c:/Temp/ButterworthLowpassFilter.log");
+
+	//createButterworthHighpassFilter(filter, source.cols / 12, 1);
+	//lineDftFilePrint(filter, "c:/Temp/ButterworthHighpassFilter.log");
+
+	for (int row = 0; row < source.rows; ++row)
+	{
+		cv::Mat dft_row = source.row(row);
+
+		float pos = festimate / fs;
+		int cols = dft_row.cols;	// 4320
+		float pos_dft = cols * pos;
+
+		int range_start = 0 + 700;// pos_dft - 50;
+		int range_close = 0 + 800;// pos_dft + 50;
+
+		int range2_start = dft_row.cols - 800;
+		int range2_close = dft_row.cols - 700;
+
+		auto p = dft_row.ptr<float>(0);
+		for (int idx = 0; idx <= dft_row.cols; idx+=2)
+		{
+			if (range_start <= idx && idx <= range_close)
+			{
+				p[idx++] = 0;
+				p[idx++] = 0;
+			}
+
+			if (range2_start <= idx && idx <= range2_close)
+			{
+				p[idx++] = 0;
+				p[idx++] = 0;
+			}
+		}
+
+		target.push_back(dft_row);
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "filter dft in seconds: " << t << endl;
+}
 
 std::vector<unsigned short> readRawImage(const char* filename, bool swap = false)
 {
@@ -333,46 +478,12 @@ void showDFT(const char* label, cv::Mat& source, cv::Size size = cv::Size(), boo
 	showImage(label, dftMagnitude, size);
 }
 
-void performFilter(cv::Mat& source, cv::Mat& target) 
-{
-	double t = (double)getTickCount();
-
-	// ...
-
-	
-
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "filter dft in seconds: " << t << endl;
-}
-
 int main(int argc, char ** argv)
 {
 	cv::Size screen(600, 600);
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
-	const char* filename = "c:/Develop/DICOM/Bilder/PE_Image.r0.raw";
-	//const char* filename = "c:/Develop/DICOM/BilderRaw/Tisch1.le.raw";
-	const char* filenames[] = {
-		"c:/Develop/DICOM/BilderRaw/Tisch1.out",
-		"c:/Develop/DICOM/BilderRaw/Tisch2.out",
-		"c:/Develop/DICOM/BilderRaw/Tisch3.out",
-		"c:/Develop/DICOM/BilderRaw/Wand1.out",
-		"c:/Develop/DICOM/BilderRaw/Wand2.out",
-		"c:/Develop/DICOM/BilderRaw/Wand3.out"
-	};
-	//const char* filename1 = "c:/Develop/DICOM/BilderRaw/Tisch1.raw";
-	//const char* filename2 = "c:/Develop/DICOM/BilderRaw/Tisch2.raw";
-	//const char* filename3 = "c:/Develop/DICOM/BilderRaw/Tisch3.raw";
-	//const char* filename4 = "c:/Develop/DICOM/BilderRaw/Wand1.raw";
-	//const char* filename5 = "c:/Develop/DICOM/BilderRaw/Wand2.raw";
-	//const char* filename6 = "c:/Develop/DICOM/BilderRaw/Wand3.raw";
-	const char* outname = "c:/Develop/DICOM/Bilder/PE_Image.result.png";
-
-	//for (const auto f : filenames) {
-	//	auto data = readRawImage(f, false);
-	//	cv::Mat shortImage(IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
-	//	showImage("Short Data Image", shortImage, screen);
-	//}
+	const char* filename = "c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw";
 
 	auto data = readRawImage(filename, false);
 
@@ -381,35 +492,35 @@ int main(int argc, char ** argv)
 
 	cv::Mat floatImage;
 	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
-	//showImage("Float Data Image", floatImage, screen);
+	showImage("Float Data Image", floatImage, screen);
 
 	cv::Mat dftImage;
 	lineDftPerfom(floatImage, dftImage);
-	//performDFT(floatImage, dftImage);				// 2D DFT
 
-	//lineByLineIterate(floatImage, dftImage);		// 1D DFT ???
+	lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
 	showDFT("DFT complex Image", dftImage, screen, false);
 	showDFT("DFT centered Image", dftImage, screen, true);
 
-	//cv::Mat gaussian;
-	//createGaussian(cv::Size(256, 256), gaussian, 256 / 2, 256 / 2, 10, 10);
-	//showImage("Gaussian Filter Mask", gaussian);
-
-	//cv::Mat filterImage;
-	//performFilter(dftImage, filterImage);
-
 	int chan = dftImage.channels();	// 2
 	int type = dftImage.type();		// 13 - CV_32FC2
 
+	cv::Mat filtered;
+	lineDftFilter(dftImage, filtered);
+
+	lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
+
+	// apply filter
+	//shiftDFT(dft_row);
+	//cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
+	//shiftDFT(dft_row);
+
 	cv::Mat inverted;
-	//invertDFT(dftImage, inverted);
-	lineDftInvert(dftImage, inverted);
+	lineDftInvert(filtered, inverted);
 	showImage("DFT inverted float", inverted, screen);
 
 	chan = inverted.channels();		// 1
 	type = inverted.type();			// 5 - CV_32FC1
-
 
 	float min = FLT_MAX, max = FLT_MIN;
 	for (int row = 0; row < inverted.rows; ++row)
@@ -422,7 +533,6 @@ int main(int argc, char ** argv)
 		}
 	}
 
-
 	cv::Mat resultImage;
 	inverted.convertTo(resultImage, CV_16UC1, USHRT_MAX / (max - min), -USHRT_MAX * min / (max - min));
 	showImage("DFT inverted short", resultImage, screen);
@@ -430,8 +540,8 @@ int main(int argc, char ** argv)
 	chan = resultImage.channels();		// 1
 	type = resultImage.type();			// 2 - CV_16UC1
 
-	cv::imwrite("c:/Temp/some_name0.pgm", resultImage);
-	cv::imwrite("c:/Temp/some_name0.png", resultImage);
+	cv::imwrite("c:/Temp/LineWiseInverted.pgm", resultImage);
+	cv::imwrite("c:/Temp/LineWiseInverted.png", resultImage);
 
 	return 0;
 }
