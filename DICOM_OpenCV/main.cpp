@@ -315,6 +315,8 @@ void lineDftFilePrint(cv::Mat& source, const char* filename)
 	double t = (double)getTickCount();
 
 	std::ostringstream oss;
+	oss.precision(4);
+	oss << std::fixed;
 	for (int row = 0; row < source.rows; ++row)
 	{
 		cv::Mat dft_row = source.row(row);
@@ -336,6 +338,10 @@ void lineDftFilePrint(cv::Mat& source, const char* filename)
 		oss << std::endl;
 	}
 
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "Linewise graph formated: " << t << endl;
+
+	t = (double)getTickCount();
 	std::ofstream logfile(filename, std::ios::binary);
 	if (!logfile.is_open())
 	{
@@ -345,7 +351,37 @@ void lineDftFilePrint(cv::Mat& source, const char* filename)
 	logfile << oss.str();
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Linewise file print in seconds: " << t << endl;
+	cout << "Linewise graph printed: " << t << endl;
+}
+
+void lineDftFileSave(cv::Mat& source, const char* filename)
+{
+	double t = (double)getTickCount();
+
+	float min = FLT_MAX, max = FLT_MIN;
+	for (int row = 0; row < source.rows; ++row)
+	{
+		auto p = source.ptr<float>(row);
+		for (int col = 0; col < source.cols; ++col)
+		{
+			if (p[col] < min) { min = p[col]; }
+			if (max < p[col]) { max = p[col]; }
+		}
+	}
+
+	cv::Mat resultImage;
+	source.convertTo(resultImage, 
+		CV_16UC1, USHRT_MAX / (max - min), 
+		-USHRT_MAX * min / (max - min)
+	);
+
+	auto chan = resultImage.channels();		// 1
+	auto type = resultImage.type();			// 2 - CV_16UC1
+
+	cv::imwrite(filename, resultImage);
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "Linewise file saved: " << t << endl;
 }
 
 float calc_f_estimate(float fs, float fg)
@@ -381,33 +417,34 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 	//createButterworthHighpassFilter(filter, source.cols / 12, 1);
 	//lineDftFilePrint(filter, "c:/Temp/ButterworthHighpassFilter.log");
 
-	for (int row = 0; row < source.rows; ++row)
+	int nRows = source.rows;
+	int nCols = source.cols;
+	int channels = source.channels();
+
+	float pos = festimate / fs;
+	float pos_dft = nCols * channels * pos;
+	float neg_dft = nCols * channels - pos_dft;
+
+	int range1_start = 700 * channels;// pos_dft - 50;
+	int range1_close = 800 * channels;// pos_dft + 50;
+	int range2_start = (nCols - 800) * channels;// neg_dft - 50;
+	int range2_close = (nCols - 700) * channels;//neg_dft + 50;
+
+	for (int row = 0; row < nRows; ++row)
 	{
 		cv::Mat dft_row = source.row(row);
-
-		float pos = festimate / fs;
-		int cols = dft_row.cols;	// 4320
-		float pos_dft = cols * pos;
-
-		int range_start = 0 + 700;// pos_dft - 50;
-		int range_close = 0 + 800;// pos_dft + 50;
-
-		int range2_start = dft_row.cols - 800;
-		int range2_close = dft_row.cols - 700;
-
 		auto p = dft_row.ptr<float>(0);
-		for (int idx = 0; idx <= dft_row.cols; idx+=2)
+
+		for (int col = 0; col <= nCols * channels; ++col)
 		{
-			if (range_start <= idx && idx <= range_close)
+			if (range1_start <= col && col <= range1_close)
 			{
-				p[idx++] = 0;
-				p[idx++] = 0;
+				p[col] = 0;
 			}
 
-			if (range2_start <= idx && idx <= range2_close)
+			if (range2_start <= col && col <= range2_close)
 			{
-				p[idx++] = 0;
-				p[idx++] = 0;
+				p[col] = 0;
 			}
 		}
 
@@ -488,19 +525,20 @@ int main(int argc, char ** argv)
 	auto data = readRawImage(filename, false);
 
 	cv::Mat shortImage (IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
-	showImage("Short Data Image", shortImage, screen);
+	//showImage("Short Data Image", shortImage, screen);
+	//cv::imwrite("C:/Temp/LineWiseOriginal.pgm", shortImage);
 
 	cv::Mat floatImage;
 	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
-	showImage("Float Data Image", floatImage, screen);
+	//showImage("Float Data Image", floatImage, screen);
 
 	cv::Mat dftImage;
 	lineDftPerfom(floatImage, dftImage);
 
-	lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
+	//lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
-	showDFT("DFT complex Image", dftImage, screen, false);
-	showDFT("DFT centered Image", dftImage, screen, true);
+	//showDFT("DFT complex Image", dftImage, screen, false);
+	//showDFT("DFT centered Image", dftImage, screen, true);
 
 	int chan = dftImage.channels();	// 2
 	int type = dftImage.type();		// 13 - CV_32FC2
@@ -517,31 +555,14 @@ int main(int argc, char ** argv)
 
 	cv::Mat inverted;
 	lineDftInvert(filtered, inverted);
-	showImage("DFT inverted float", inverted, screen);
+	//showImage("DFT inverted float", inverted, screen);
 
 	chan = inverted.channels();		// 1
 	type = inverted.type();			// 5 - CV_32FC1
 
-	float min = FLT_MAX, max = FLT_MIN;
-	for (int row = 0; row < inverted.rows; ++row)
-	{
-		auto p = inverted.ptr<float>(row);
-		for (int col = 0; col < inverted.cols; ++col)
-		{
-			if (p[col] < min) { min = p[col]; }
-			if (max < p[col]) { max = p[col]; }
-		}
-	}
+	lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
 
-	cv::Mat resultImage;
-	inverted.convertTo(resultImage, CV_16UC1, USHRT_MAX / (max - min), -USHRT_MAX * min / (max - min));
-	showImage("DFT inverted short", resultImage, screen);
-
-	chan = resultImage.channels();		// 1
-	type = resultImage.type();			// 2 - CV_16UC1
-
-	cv::imwrite("c:/Temp/LineWiseInverted.pgm", resultImage);
-	cv::imwrite("c:/Temp/LineWiseInverted.png", resultImage);
+	cv::waitKey();
 
 	return 0;
 }
