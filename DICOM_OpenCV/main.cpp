@@ -11,6 +11,8 @@
 #include <cfloat>
 #include <intrin.h>
 #include <cmath>
+#include <math.h>
+#include <cfenv>
 
 using namespace cv;
 using namespace std;
@@ -402,6 +404,36 @@ float calc_f_estimate(float fs, float fg)
 	return festimate;
 }
 
+void lineDftAbsolute(cv::Mat& source, cv::Mat& target)
+{
+	int nRows = source.rows;
+	int nCols = source.cols;
+	int channels = source.channels();
+	target = source.clone();
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		cv::Mat dft_row = source.row(row);
+		cv::Mat tar_row = target.row(row);
+		auto p = dft_row.ptr<float>(0);
+		auto p2 = tar_row.ptr<float>(0);
+
+		for (int col = 0; col < nCols; col+=channels)
+		{
+			float re = p[col + 0];
+			float im = p[col + 1];
+			std::complex<float> value(re, im);
+
+			value = std::pow(value * std::conj(value), 0.5);
+
+			p2[col + 0] = value.real();
+			p2[col + 1] = value.imag();
+		}
+		auto x = 0;
+	}
+	auto y = 0;
+}
+
 void lineDftFilter(cv::Mat& source, cv::Mat& target)
 {
 	double t = (double)getTickCount();
@@ -425,26 +457,132 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 	float pos_dft = nCols * channels * pos;
 	float neg_dft = nCols * channels - pos_dft;
 
-	int range1_start = 700 * channels;// pos_dft - 50;
-	int range1_close = 800 * channels;// pos_dft + 50;
-	int range2_start = (nCols - 800) * channels;// neg_dft - 50;
-	int range2_close = (nCols - 700) * channels;//neg_dft + 50;
+	// pos verbessern duch Suche nach Maximum nach links und rechts
 
+	int range1_start = /*700 * channels;*/ pos_dft - (pos_dft / 5);
+	int range1_close = /*800 * channels;*/ pos_dft + (pos_dft / 5);
+	int range2_start = /*(nCols - 800) * channels;*/ neg_dft - (pos_dft / 5);
+	int range2_close = /*(nCols - 700) * channels;*/ neg_dft + (pos_dft / 5);
+
+	float pos_max_re = 0, pos_max_im = 0;
+	bool updated = false;
 	for (int row = 0; row < nRows; ++row)
 	{
 		cv::Mat dft_row = source.row(row);
 		auto p = dft_row.ptr<float>(0);
+		std::complex<float> test(p[0], p[1]);
 
-		for (int col = 0; col <= nCols * channels; ++col)
-		{
-			if (range1_start <= col && col <= range1_close)
+		float mean_re = 0, mean_im = 0;
+		float min_re = FLT_MAX, max_re = FLT_MIN, min_im = FLT_MAX, max_im = FLT_MIN;
+		if (!updated) {
+			for (size_t i = range1_start; i <= range1_close; i += 2)
 			{
-				p[col] = 0;
+				float re = p[i + 0];
+				float im = p[i + 1];
+				if (re < min_re) { min_re = re; }
+				if (max_re < re) { max_re = re; pos_max_re = i; }
+				if (im < min_im) { min_im = im; }
+				if (max_im < im) { max_im = im; pos_max_im = i; }
+				mean_re += p[i + 0];
+				mean_im += p[i + 1];
 			}
+			mean_re /= (range1_close - range1_start) / channels;
+			mean_im /= (range1_close - range1_start) / channels;
+			
+			pos_dft = pos_max_im;
+			neg_dft = nCols * channels - pos_dft;
 
-			if (range2_start <= col && col <= range2_close)
-			{
-				p[col] = 0;
+			// pos verbessern duch Suche nach Maximum nach links und rechts
+
+			range1_start = /*700 * channels;*/ pos_dft - (pos_dft / 10);
+			range1_close = /*800 * channels;*/ pos_dft + (pos_dft / 10);
+			range2_start = /*(nCols - 800) * channels;*/ neg_dft - (pos_dft / 10);
+			range2_close = /*(nCols - 700) * channels;*/ neg_dft + (pos_dft / 10);
+		}
+		updated = true;
+
+		int count = 0;
+		float sum_sqr_re = 0;
+		float sum_sqr_im = 0;
+
+		std::complex<float> cmean(0.0, 0.0);
+		std::complex<float> csumsqr(0.0, 0.0);
+		for (size_t i = range1_start; i <= range1_close; i += 2)
+		{
+			float re = p[i + 0];
+			float im = p[i + 1];
+			std::complex<float> v(re, im);
+			if (re < min_re) { min_re = re; }
+			if (max_re < re) { max_re = re; pos_max_re = i; }
+			if (im < min_im) { min_im = im; }
+			if (max_im < im) { max_im = im; pos_max_im = i; }
+			mean_re += p[i + 0];
+			mean_im += p[i + 1];
+			cmean += v;
+			sum_sqr_re += p[i + 0] * p[i + 0];
+			sum_sqr_im += p[i + 1] * p[i + 1];
+			csumsqr += v * v;
+			count++;
+		}
+		mean_re /= (range1_close - range1_start) / channels;
+		mean_im /= (range1_close - range1_start) / channels;
+		cmean /= (range1_close - range1_start) / channels;
+		// Standardabweichung
+		float mean_sqr_re = (mean_re*mean_re*count);
+		float std_dev_re = sqrt((sum_sqr_re - mean_sqr_re) / (float)count);
+		float mean_sqr_im = (mean_im*mean_im*count);
+		float std_dev_im = sqrt((sum_sqr_im - mean_sqr_im) / (float)count);
+		std::complex<float> cmeansqr = (cmean*cmean*(float)count);
+		std::complex<float> cstddev = sqrt((csumsqr - cmeansqr) / (float)count);
+
+		// rennt durch alle werte und setzt bereich auf null
+		//for (int col = 0; col <= nCols * channels; col+=2)
+		//{
+		//	if (range1_start <= col && col <= range1_close)
+		//	{
+		//		p[col + 0] = mean_re;
+		//		p[col + 1] = mean_im;
+		//	}
+
+		//	if (range2_start <= col && col <= range2_close)
+		//	{
+		//		p[col + 0] = mean_re;
+		//		p[col + 1] = mean_im;
+		//	}
+		//}
+
+		// Gaussian band stop filter
+		std::complex<float> mean(cmean);// mean(mean_re, mean_im);
+		//std::complex<float> std_dev(cstddev);// std_dev(0.1, 0.1);// (std_dev_re, std_dev_im);
+		float std_dev = 1.0;
+		for (int col = 0; col < nCols * channels; col += 2) {
+			std::complex<float> vcur(p[col + 0], p[col + 1]);
+
+			std::feclearexcept(FE_ALL_EXCEPT);
+			//std::complex<float> v1 = 1.0f / (std_dev * (float)sqrt(2.0*CV_PI));
+			//std::complex<float> v2 = vcur - mean;
+			//std::complex<float> v3a = -(v2 * v2);
+			//std::complex<float> v3b = (2.0f * std_dev * std_dev);
+			//std::complex<float> v3 = v3a / v3b;// std::conj(v3b);
+			//std::complex<float> bu1 = v1 - v1 * exp(v3);
+
+			//std::complex<float> v4 = (vcur - mean) / std_dev;
+			//std::complex<float> bu2 = 1.0f - exp(-0.5f*(v2*v2));
+
+			float v1 = 1.0f / (std_dev * (float)sqrt(2.0*CV_PI));
+			float v2 = col - pos_dft;
+			float v3a = -(v2 * v2);
+			float v3b = (2.0f * std_dev * std_dev);
+			float v3 = v3a / v3b;// std::conj(v3b);
+			float bu1 = v1 - v1 * exp(v3);
+
+			//if (!std::fetestexcept(FE_INVALID)) {
+			//	p[col + 0] = bu1.real();
+			//	p[col + 1] = bu1.imag();
+			//}
+			if (!std::fetestexcept(FE_INVALID)) {
+				p[col + 0] = vcur.real() * bu1;
+				p[col + 1] = vcur.imag() * bu1;
 			}
 		}
 
@@ -537,30 +675,38 @@ int main(int argc, char ** argv)
 
 	//lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
-	//showDFT("DFT complex Image", dftImage, screen, false);
-	//showDFT("DFT centered Image", dftImage, screen, true);
+	showDFT("DFT complex Image", dftImage, screen, false);
+	showDFT("DFT centered Image", dftImage, screen, true);
 
 	int chan = dftImage.channels();	// 2
 	int type = dftImage.type();		// 13 - CV_32FC2
+
+	//cv::Mat absolute;
+	//lineDftAbsolute(dftImage, absolute);
+	//lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
 
 	cv::Mat filtered;
 	lineDftFilter(dftImage, filtered);
 
 	lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
 
+	//cv::Size filterSize = cv::Size(4320, 4320);
+	//cv::Mat filterTest = createGaussianHighPassFilter(filterSize, 0);
+	
+
 	// apply filter
 	//shiftDFT(dft_row);
 	//cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
 	//shiftDFT(dft_row);
 
-	cv::Mat inverted;
-	lineDftInvert(filtered, inverted);
-	//showImage("DFT inverted float", inverted, screen);
+	//cv::Mat inverted;
+	//lineDftInvert(filtered, inverted);
+	////showImage("DFT inverted float", inverted, screen);
 
-	chan = inverted.channels();		// 1
-	type = inverted.type();			// 5 - CV_32FC1
+	//chan = inverted.channels();		// 1
+	//type = inverted.type();			// 5 - CV_32FC1
 
-	lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
+	//lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
 
 	cv::waitKey();
 
