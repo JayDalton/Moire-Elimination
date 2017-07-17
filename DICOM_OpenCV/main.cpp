@@ -58,6 +58,32 @@ double gaussianCoeff(double u, double v, double d0)
 	return 1.0 - cv::exp((-d*d) / (2 * d0*d0));
 }
 
+cv::Mat create1dGaussianCurve(cv::Mat& source)
+{
+	cv::Mat result (source.rows, source.cols, CV_32F);
+
+	float sigma = 15.0, mu = 750.0;
+
+	//float bu = 1.0 / std::sqrtf(2.0 * CV_PI) * std::exp(- 1/2 * (x*x));
+
+	float t1 = 1.0 / (sigma * std::sqrtf(2.0 * CV_PI));
+	float min = FLT_MAX, max = FLT_MIN;
+
+	auto p = result.ptr<float>(0);
+	for (size_t i = 0; i < result.cols; i++)
+	{
+		float bu = 1 - std::exp(- 0.5f * (((i - mu) / sigma) * ((i - mu) / sigma)));
+	
+		//float t2 = t1 - t1 * std::exp(-((i - mu)*(i - mu)) / (2 * sigma * sigma));
+		p[i] = bu;
+
+		if (bu < min) { min = bu; }
+		if (max < bu) { max = bu; }
+	}
+
+	return result;
+}
+
 cv::Mat createGaussianHighPassFilter(cv::Size size, float cutoffInPixels)
 {
 	Mat ghpf(size, CV_32F);
@@ -457,6 +483,9 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 	float pos_dft = nCols * channels * pos;
 	float neg_dft = nCols * channels - pos_dft;
 
+	auto curve = create1dGaussianCurve(source.row(0));
+	write1ChannelLogFile(curve, "c:/Temp/LineWiseDft1dCurve.log");
+
 	// pos verbessern duch Suche nach Maximum nach links und rechts
 
 	int range1_start = /*700 * channels;*/ pos_dft - (pos_dft / 5);
@@ -469,6 +498,7 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 	for (int row = 0; row < nRows; ++row)
 	{
 		cv::Mat dft_row = source.row(row);
+
 		auto p = dft_row.ptr<float>(0);
 		std::complex<float> test(p[0], p[1]);
 
@@ -555,8 +585,13 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 		std::complex<float> mean(cmean);// mean(mean_re, mean_im);
 		//std::complex<float> std_dev(cstddev);// std_dev(0.1, 0.1);// (std_dev_re, std_dev_im);
 		float std_dev = 1.0;
+		auto pCurve = curve.ptr<float>(0);
 		for (int col = 0; col < nCols * channels; col += 2) {
 			std::complex<float> vcur(p[col + 0], p[col + 1]);
+
+			//auto l = std::pow(0.5f, vcur * std::conj(vcur));
+			auto c = vcur * pCurve[col / 2];
+			//auto c = std::complex<float>(x, vcur.imag());
 
 			std::feclearexcept(FE_ALL_EXCEPT);
 			//std::complex<float> v1 = 1.0f / (std_dev * (float)sqrt(2.0*CV_PI));
@@ -569,20 +604,20 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 			//std::complex<float> v4 = (vcur - mean) / std_dev;
 			//std::complex<float> bu2 = 1.0f - exp(-0.5f*(v2*v2));
 
-			float v1 = 1.0f / (std_dev * (float)sqrt(2.0*CV_PI));
-			float v2 = col - pos_dft;
-			float v3a = -(v2 * v2);
-			float v3b = (2.0f * std_dev * std_dev);
-			float v3 = v3a / v3b;// std::conj(v3b);
-			float bu1 = v1 - v1 * exp(v3);
+			//float v1 = 1.0f / (std_dev * (float)sqrt(2.0*CV_PI));
+			//float v2 = col - pos_dft;
+			//float v3a = -(v2 * v2);
+			//float v3b = (2.0f * std_dev * std_dev);
+			//float v3 = v3a / v3b;// std::conj(v3b);
+			//float bu1 = v1 - v1 * exp(v3);
 
 			//if (!std::fetestexcept(FE_INVALID)) {
 			//	p[col + 0] = bu1.real();
 			//	p[col + 1] = bu1.imag();
 			//}
 			if (!std::fetestexcept(FE_INVALID)) {
-				p[col + 0] = vcur.real() * bu1;
-				p[col + 1] = vcur.imag() * bu1;
+				p[col + 0] = c.real();
+				p[col + 1] = c.imag();
 			}
 		}
 
@@ -675,8 +710,8 @@ int main(int argc, char ** argv)
 
 	//lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
-	showDFT("DFT complex Image", dftImage, screen, false);
-	showDFT("DFT centered Image", dftImage, screen, true);
+	//showDFT("DFT complex Image", dftImage, screen, false);
+	//showDFT("DFT centered Image", dftImage, screen, true);
 
 	int chan = dftImage.channels();	// 2
 	int type = dftImage.type();		// 13 - CV_32FC2
@@ -699,16 +734,16 @@ int main(int argc, char ** argv)
 	//cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
 	//shiftDFT(dft_row);
 
-	//cv::Mat inverted;
-	//lineDftInvert(filtered, inverted);
-	////showImage("DFT inverted float", inverted, screen);
+	cv::Mat inverted;
+	lineDftInvert(filtered, inverted);
+	//showImage("DFT inverted float", inverted, screen);
 
-	//chan = inverted.channels();		// 1
-	//type = inverted.type();			// 5 - CV_32FC1
+	chan = inverted.channels();		// 1
+	type = inverted.type();			// 5 - CV_32FC1
 
-	//lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
+	lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
 
-	cv::waitKey();
+	//cv::waitKey();
 
 	return 0;
 }
