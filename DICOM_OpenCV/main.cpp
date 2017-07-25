@@ -392,62 +392,81 @@ void lineDftFilePrint(cv::Mat& source, const char* filename)
 	cout << "Linewise graph printed: " << t << endl;
 }
 
-void lineDftFileSave(cv::Mat& source, const char* filename)
+void save_matrix_to_pgm_file(cv::Mat& source, std::string filename)
 {
 	double t = (double)getTickCount();
 
-	//float min = FLT_MAX, max = FLT_MIN;
-	//for (int row = 0; row < source.rows; ++row)
-	//{
-	//	auto p = source.ptr<float>(row);
-	//	for (int col = 0; col < source.cols; ++col)
-	//	{
-	//		if (p[col] < min) { min = p[col]; }
-	//		if (max < p[col]) { max = p[col]; }
-	//	}
-	//}
-
 	cv::Mat resultImage;
-	//source.convertTo(resultImage, 
-	//	CV_16UC1, USHRT_MAX / (max - min), 
-	//	-USHRT_MAX * min / (max - min)
-	//);
-	source.convertTo(resultImage, CV_16UC1, USHRT_MAX);
-
-	auto chan = resultImage.channels();		// 1
-	auto type = resultImage.type();			// 2 - CV_16UC1
-
-	cv::imwrite(filename, resultImage);
-
-	char fname2[1000];
-	strcpy(fname2, filename);
-	strcat(fname2, ".raw");
-	std::ofstream oss(fname2, std::ofstream::binary | std::ofstream::out);
-	if (!oss.is_open())
+	switch (source.type())
 	{
-		std::cout << "Can not open image file: " << fname2 << std::endl;
+	case CV_16U:
+		resultImage = source.clone();
+		break;
+	case CV_32F:
+		source.convertTo(resultImage, CV_16UC1, USHRT_MAX);
+		break;
+	default:
 		return;
 	}
 
-	//double t = (double)getTickCount();
-
-	for (int row = 0; row < resultImage.rows; ++row)
-	{
-		auto p = resultImage.ptr<unsigned short>(row);
-		auto sz = sizeof(p[0]);
-		for (int col = 0; col < resultImage.cols; ++col)
-		{
-			//if (0 < col) oss << ";";
-			//oss << p[col];
-			unsigned short val = p[col];
-			oss.write(reinterpret_cast<const char*>(&val), sz);
-		}
-		//oss << std::endl;
-	}
-
+	cv::imwrite(filename, resultImage);
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Linewise file saved: " << t << endl;
+	cout << "Saved pgm file: " << t << endl;
+}
+
+void save_matrix_to_short_file(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+
+	auto chan = source.channels();		// 1
+	if (chan != 1)
+	{
+		return;
+	}
+
+	cv::Mat resultImage;
+	switch (source.type())
+	{
+		case CV_16U:
+			resultImage = source.clone();
+			break;
+		case CV_32F:
+			source.convertTo(resultImage, CV_16UC1, USHRT_MAX);
+			break;
+		default:
+			return;
+	}
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	auto chans = resultImage.channels();
+	auto nRows = resultImage.rows;
+	auto nCols = resultImage.cols;
+
+	if (resultImage.isContinuous())
+	{
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		auto sz = sizeof(unsigned short);
+		auto p = resultImage.ptr<unsigned short>(row);
+		for (int col = 0; col < nCols; ++col)
+		{
+			ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "saved raw file: " << t << endl;
 }
 
 float calc_f_estimate(float fs, float fg)
@@ -731,56 +750,66 @@ int main(int argc, char ** argv)
 	cv::Size screen(600, 600);
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
-	const char* filename = "c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw";
-	//const char* filename = "c:/Temp/LineWiseInverted.pgm.raw";
+	std::string inputName("c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw");
 
-	auto data = readRawImage(filename, false);
+	// read file to short array
+	auto data = readRawImage(inputName.c_str(), false);
 
+	// load, show data matrix
 	cv::Mat shortImage (IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
-	//showImage("Short Data Image", shortImage, screen);
-	//cv::imwrite("C:/Temp/LineWiseOriginal.pgm", shortImage);
+	showImage("Short Data Image", shortImage, screen);
 
+	// write short matrix
+	save_matrix_to_pgm_file(shortImage, inputName + "_short.pgm");
+	save_matrix_to_short_file(shortImage, inputName + "_short.raw");
+
+	// convert matrix to float
 	cv::Mat floatImage;
 	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
-	//showImage("Float Data Image", floatImage, screen);
+	showImage("Float Data Image", floatImage, screen);
 
-	cv::Mat dftImage;
-	lineDftPerfom(floatImage, dftImage);
+	// write float matrix
+	save_matrix_to_pgm_file(floatImage, inputName + "_float.pgm");
+	save_matrix_to_short_file(floatImage, inputName + "_float.raw");
 
-	//lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
-	//showDFT("DFT complex Image", dftImage, screen, false);
-	//showDFT("DFT centered Image", dftImage, screen, true);
+	//cv::Mat dftImage;
+	//lineDftPerfom(floatImage, dftImage);
 
-	int chan = dftImage.channels();	// 2
-	int type = dftImage.type();		// 13 - CV_32FC2
+	////lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
 
-	//cv::Mat absolute;
-	//lineDftAbsolute(dftImage, absolute);
-	//lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
+	////showDFT("DFT complex Image", dftImage, screen, false);
+	////showDFT("DFT centered Image", dftImage, screen, true);
 
-	cv::Mat filtered;
-	lineDftFilter(dftImage, filtered);
+	//int chan = dftImage.channels();	// 2
+	//int type = dftImage.type();		// 13 - CV_32FC2
 
-	lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
+	////cv::Mat absolute;
+	////lineDftAbsolute(dftImage, absolute);
+	////lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
 
-	//cv::Size filterSize = cv::Size(4320, 4320);
-	//cv::Mat filterTest = createGaussianHighPassFilter(filterSize, 0);
-	
+	//cv::Mat filtered;
+	//lineDftFilter(dftImage, filtered);
 
-	// apply filter
-	//shiftDFT(dft_row);
-	//cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
-	//shiftDFT(dft_row);
+	//lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
 
-	cv::Mat inverted;
-	lineDftInvert(filtered, inverted);
-	//showImage("DFT inverted float", inverted, screen);
+	////cv::Size filterSize = cv::Size(4320, 4320);
+	////cv::Mat filterTest = createGaussianHighPassFilter(filterSize, 0);
+	//
 
-	chan = inverted.channels();		// 1
-	type = inverted.type();			// 5 - CV_32FC1
+	//// apply filter
+	////shiftDFT(dft_row);
+	////cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
+	////shiftDFT(dft_row);
 
-	lineDftFileSave(inverted, "c:/Temp/LineWiseInverted.pgm");
+	//cv::Mat inverted;
+	//lineDftInvert(filtered, inverted);
+	////showImage("DFT inverted float", inverted, screen);
+
+	//chan = inverted.channels();		// 1
+	//type = inverted.type();			// 5 - CV_32FC1
+
+	//save_matrix_to_short_file(inverted, "c:/Temp/LineWiseInverted.pgm");
 
 	//cv::waitKey();
 
