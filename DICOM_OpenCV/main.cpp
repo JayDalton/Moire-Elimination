@@ -62,23 +62,33 @@ cv::Mat create1dGaussianCurve(cv::Mat& source)
 {
 	cv::Mat result (source.rows, source.cols, CV_32F);
 
-	float sigma = 15.0, mu = 750.0;
+	//std::vector<float> temp;
 
-	//float bu = 1.0 / std::sqrtf(2.0 * CV_PI) * std::exp(- 1/2 * (x*x));
+	float sigma = 30.0, mu = 750.0;
 
 	float t1 = 1.0 / (sigma * std::sqrtf(2.0 * CV_PI));
 	float min = FLT_MAX, max = FLT_MIN;
 
 	auto p = result.ptr<float>(0);
-	for (size_t i = 0; i < result.cols; i++)
+	for (size_t i = 0; i < result.cols / 2; i++)
 	{
-		float bu = 1 - std::exp(- 0.5f * (((i - mu) / sigma) * ((i - mu) / sigma)));
-	
-		//float t2 = t1 - t1 * std::exp(-((i - mu)*(i - mu)) / (2 * sigma * sigma));
+		//float bu = 1 - std::exp(- 0.5f * (((i - mu) / sigma) * ((i - mu) / sigma)));
+
+		float t2 = (-((i - mu) * (i - mu))) / (2.0 * sigma * sigma);
+		float bu = t1 - t1 * std::exp(t2);
+
+		//temp.push_back(bu);
 		p[i] = bu;
+		p[result.cols - i-1] = bu;
 
 		if (bu < min) { min = bu; }
 		if (max < bu) { max = bu; }
+	}
+
+	float offset = 1.0 - max;
+	for (size_t i = 0; i < result.cols; i++)
+	{
+		p[i] += offset;
 	}
 
 	return result;
@@ -386,27 +396,55 @@ void lineDftFileSave(cv::Mat& source, const char* filename)
 {
 	double t = (double)getTickCount();
 
-	float min = FLT_MAX, max = FLT_MIN;
-	for (int row = 0; row < source.rows; ++row)
-	{
-		auto p = source.ptr<float>(row);
-		for (int col = 0; col < source.cols; ++col)
-		{
-			if (p[col] < min) { min = p[col]; }
-			if (max < p[col]) { max = p[col]; }
-		}
-	}
+	//float min = FLT_MAX, max = FLT_MIN;
+	//for (int row = 0; row < source.rows; ++row)
+	//{
+	//	auto p = source.ptr<float>(row);
+	//	for (int col = 0; col < source.cols; ++col)
+	//	{
+	//		if (p[col] < min) { min = p[col]; }
+	//		if (max < p[col]) { max = p[col]; }
+	//	}
+	//}
 
 	cv::Mat resultImage;
-	source.convertTo(resultImage, 
-		CV_16UC1, USHRT_MAX / (max - min), 
-		-USHRT_MAX * min / (max - min)
-	);
+	//source.convertTo(resultImage, 
+	//	CV_16UC1, USHRT_MAX / (max - min), 
+	//	-USHRT_MAX * min / (max - min)
+	//);
+	source.convertTo(resultImage, CV_16UC1, USHRT_MAX);
 
 	auto chan = resultImage.channels();		// 1
 	auto type = resultImage.type();			// 2 - CV_16UC1
 
 	cv::imwrite(filename, resultImage);
+
+	char fname2[1000];
+	strcpy(fname2, filename);
+	strcat(fname2, ".raw");
+	std::ofstream oss(fname2, std::ofstream::binary | std::ofstream::out);
+	if (!oss.is_open())
+	{
+		std::cout << "Can not open image file: " << fname2 << std::endl;
+		return;
+	}
+
+	//double t = (double)getTickCount();
+
+	for (int row = 0; row < resultImage.rows; ++row)
+	{
+		auto p = resultImage.ptr<unsigned short>(row);
+		auto sz = sizeof(p[0]);
+		for (int col = 0; col < resultImage.cols; ++col)
+		{
+			//if (0 < col) oss << ";";
+			//oss << p[col];
+			unsigned short val = p[col];
+			oss.write(reinterpret_cast<const char*>(&val), sz);
+		}
+		//oss << std::endl;
+	}
+
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
 	cout << "Linewise file saved: " << t << endl;
@@ -694,6 +732,7 @@ int main(int argc, char ** argv)
 	unsigned short IMG_ROWS = 4320;
 	unsigned short IMG_COLS = 4318;
 	const char* filename = "c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw";
+	//const char* filename = "c:/Temp/LineWiseInverted.pgm.raw";
 
 	auto data = readRawImage(filename, false);
 
