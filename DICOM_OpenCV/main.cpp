@@ -64,7 +64,7 @@ cv::Mat create1dGaussianCurve(cv::Mat& source)
 
 	//std::vector<float> temp;
 
-	float sigma = 30.0, mu = 750.0;
+	float sigma = 30.0, mu = 750.0;		// magic
 
 	float t1 = 1.0 / (sigma * std::sqrtf(2.0 * CV_PI));
 	float min = FLT_MAX, max = FLT_MIN;
@@ -72,10 +72,10 @@ cv::Mat create1dGaussianCurve(cv::Mat& source)
 	auto p = result.ptr<float>(0);
 	for (size_t i = 0; i < result.cols / 2; i++)
 	{
-		//float bu = 1 - std::exp(- 0.5f * (((i - mu) / sigma) * ((i - mu) / sigma)));
+		float bu = 1 - std::exp(- 0.5f * (((i - mu) / sigma) * ((i - mu) / sigma)));
 
-		float t2 = (-((i - mu) * (i - mu))) / (2.0 * sigma * sigma);
-		float bu = t1 - t1 * std::exp(t2);
+		//float t2 = (-((i - mu) * (i - mu))) / (2.0 * sigma * sigma);
+		//float bu = t1 - t1 * std::exp(t2);
 
 		//temp.push_back(bu);
 		p[i] = bu;
@@ -348,13 +348,10 @@ void lineDftPerfom(cv::Mat& source, cv::Mat& target)
 	cout << "line dft perform: " << t << endl;
 }
 
-void lineDftFilePrint(cv::Mat& source, const char* filename)
+void format_matrix_to_magnitude(cv::Mat& source, cv::Mat& target)
 {
 	double t = (double)getTickCount();
 
-	std::ostringstream oss;
-	oss.precision(4);
-	oss << std::fixed;
 	for (int row = 0; row < source.rows; ++row)
 	{
 		cv::Mat dft_row = source.row(row);
@@ -366,35 +363,81 @@ void lineDftFilePrint(cv::Mat& source, const char* filename)
 		cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
 		magI += Scalar::all(1);							// switch to logarithmic scale
 		cv::log(magI, magI);
+		target.push_back(magI);
 
-		float* p = magI.ptr<float>(0);
-		for (int col = 0; col < magI.cols; ++col)
-		{
-			if (0 < col) oss << ";";
-			oss << p[col];
-		}
-		oss << std::endl;
+		//std::stringstream ss;
+		//float* p = target.ptr<float>(0);
+		//for (int col = 0; col < target.cols; ++col)
+		//{
+		//	if (0 < col) ss << ";";
+		//	ss << p[col];
+		//}
+		//ss << std::endl;
+		//ofs << ss.str();
 	}
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Linewise graph formated: " << t << endl;
+	cout << "saved log file: " << t << endl;
+}
 
-	t = (double)getTickCount();
-	std::ofstream logfile(filename, std::ios::binary);
-	if (!logfile.is_open())
+void print_matrix_to_log_file(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+
+	auto chan = source.channels();		// 1
+	if (chan != 1)
+	{
+		std::cout << "NOT saved! channels " << chan << std::endl;
+		return;
+	}
+
+	std::ofstream ofs(filename, std::ios::binary);
+	if (!ofs.is_open())
 	{
 		std::cout << "Can not open outfile: " << filename << std::endl;
 		return;
 	}
-	logfile << oss.str();
+
+	std::stringstream ss;
+	ss.precision(4);
+	ss << std::fixed;
+	for (int row = 0; row < source.rows; ++row)
+	{
+		cv::Mat dft_row = source.row(row);
+
+		//cv::Mat planes[2];
+		//cv::split(dft_row, planes);						// planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+
+		//cv::Mat magI;									// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
+		//cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
+		//magI += Scalar::all(1);							// switch to logarithmic scale
+		//cv::log(magI, magI);
+
+		std::stringstream ss;
+		float* p = dft_row.ptr<float>(0);
+		for (int col = 0; col < dft_row.cols; ++col)
+		{
+			if (0 < col) ss << ";";
+			ss << p[col];
+		}
+		ss << std::endl;
+	}
+	ofs << ss.str();
 
 	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Linewise graph printed: " << t << endl;
+	cout << "saved log file: " << t << endl;
 }
 
 void save_matrix_to_pgm_file(cv::Mat& source, std::string filename)
 {
 	double t = (double)getTickCount();
+
+	auto chan = source.channels();		// 1
+	if (chan != 1)
+	{
+		std::cout << "NOT saved! channels " << chan << std::endl;
+		return;
+	}
 
 	cv::Mat resultImage;
 	switch (source.type())
@@ -415,6 +458,173 @@ void save_matrix_to_pgm_file(cv::Mat& source, std::string filename)
 	cout << "Saved pgm file: " << t << endl;
 }
 
+void save_matrix_to_float_file(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+
+	auto chan = source.channels();		// 1
+	if (chan != 1)
+	{
+		std::cout << "NOT saved! channels " << chan << std::endl;
+		return;
+	}
+
+	cv::Mat resultImage;
+	switch (source.type())
+	{
+	case CV_16U:
+		source.convertTo(resultImage, CV_32FC1, USHRT_MAX);
+		break;
+	case CV_32F:
+		resultImage = source.clone();
+		break;
+	default:
+		return;
+	}
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	auto chans = resultImage.channels();
+	auto nRows = resultImage.rows;
+	auto nCols = resultImage.cols;
+
+	if (resultImage.isContinuous())
+	{
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		auto sz = sizeof(float);
+		auto p = resultImage.ptr<float>(row);
+		for (int col = 0; col < nCols; ++col)
+		{
+			ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "saved raw file: " << t << endl;
+}
+
+void save_matrix_to_format_file(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+
+	auto chans = source.channels();		// 1
+	if (chans != 1)
+	{
+		std::cout << "NOT saved! channels " << chans << std::endl;
+		return;
+	}
+
+	auto mType = source.type();
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
+	{
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	std::stringstream ss;
+	if (mType == CV_16U)
+	{
+	}
+	else if (mType == CV_32F)
+	{
+		ss.precision(4);
+		ss << std::fixed;
+	}
+
+	for (int row = 0; row < source.rows; ++row)
+	{
+		//cv::Mat dft_row = source.row(row);
+
+		//std::stringstream ss;
+		float* p = source.ptr<float>(row);
+		for (int col = 0; col < source.cols; ++col)
+		{
+			if (0 < col) ss << ";";
+			ss << p[col];
+		}
+		ss << std::endl;
+	}
+	ofs << ss.str();
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "saved raw file: " << t << endl;
+}
+
+void save_matrix_to_binary_file(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+
+	auto chans = source.channels();		// 1
+	if (chans != 1)
+	{
+		std::cout << "NOT saved! channels " << chans << std::endl;
+		return;
+	}
+
+	auto mType = source.type();
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
+	{
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	if (mType == CV_16U)
+	{
+		for (int row = 0; row < nRows; ++row)
+		{
+			auto sz = sizeof(unsigned short);
+			auto p = source.ptr<unsigned short>(row);
+			for (int col = 0; col < nCols; ++col)
+			{
+				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+			}
+		}
+	}
+	else if (mType == CV_32F) 
+	{
+		for (int row = 0; row < nRows; ++row)
+		{
+			auto sz = sizeof(float);
+			auto p = source.ptr<float>(row);
+			for (int col = 0; col < nCols; ++col)
+			{
+				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+			}
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "saved raw file: " << t << endl;
+}
+
 void save_matrix_to_short_file(cv::Mat& source, std::string filename)
 {
 	double t = (double)getTickCount();
@@ -422,6 +632,7 @@ void save_matrix_to_short_file(cv::Mat& source, std::string filename)
 	auto chan = source.channels();		// 1
 	if (chan != 1)
 	{
+		std::cout << "NOT saved! channels " << chan << std::endl;
 		return;
 	}
 
@@ -760,8 +971,8 @@ int main(int argc, char ** argv)
 	showImage("Short Data Image", shortImage, screen);
 
 	// write short matrix
-	save_matrix_to_pgm_file(shortImage, inputName + "_short.pgm");
-	save_matrix_to_short_file(shortImage, inputName + "_short.raw");
+	//save_matrix_to_pgm_file(shortImage, inputName + "_short.pgm");
+	//save_matrix_to_short_file(shortImage, inputName + "_short.raw");
 
 	// convert matrix to float
 	cv::Mat floatImage;
@@ -769,28 +980,33 @@ int main(int argc, char ** argv)
 	showImage("Float Data Image", floatImage, screen);
 
 	// write float matrix
-	save_matrix_to_pgm_file(floatImage, inputName + "_float.pgm");
-	save_matrix_to_short_file(floatImage, inputName + "_float.raw");
+	//save_matrix_to_pgm_file(floatImage, inputName + "_float.pgm");
+	//save_matrix_to_short_file(floatImage, inputName + "_float.raw");
 
+	cv::Mat dftImage;
+	lineDftPerfom(floatImage, dftImage);
 
-	//cv::Mat dftImage;
-	//lineDftPerfom(floatImage, dftImage);
+	cv::Mat magnitude;
+	//format_matrix_to_magnitude(dftImage, magnitude);
+	//save_matrix_to_format_file(magnitude, inputName + "_magnitude.log");
+	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw");
+	//save_matrix_to_short_file(magnitude, inputName + "_transform.raw");
+	//print_matrix_to_log_file(magnitude, inputName + "_transform.log");
 
-	////lineDftFilePrint(dftImage, "C:/Temp/LineWiseDftTransform.log");
+	showDFT("DFT complex Image", dftImage, screen, false);
+	showDFT("DFT centered Image", dftImage, screen, true);
 
-	////showDFT("DFT complex Image", dftImage, screen, false);
-	////showDFT("DFT centered Image", dftImage, screen, true);
-
-	//int chan = dftImage.channels();	// 2
-	//int type = dftImage.type();		// 13 - CV_32FC2
+	int chan = dftImage.channels();	// 2
+	int type = dftImage.type();		// 13 - CV_32FC2
 
 	////cv::Mat absolute;
 	////lineDftAbsolute(dftImage, absolute);
 	////lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
 
-	//cv::Mat filtered;
-	//lineDftFilter(dftImage, filtered);
-
+	cv::Mat filtered, filterview;
+	lineDftFilter(dftImage, filtered);
+	format_matrix_to_magnitude(filtered, filterview);
+	save_matrix_to_format_file(filterview, inputName + "_filtered.log");
 	//lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
 
 	////cv::Size filterSize = cv::Size(4320, 4320);
