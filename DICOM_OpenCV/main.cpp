@@ -728,6 +728,18 @@ void lineDftAbsolute(cv::Mat& source, cv::Mat& target)
 	auto y = 0;
 }
 
+std::complex<float> calc_range_mean(const cv::Mat& row, int start, int length) 
+{
+	complex<float> result(0, 0);
+	auto p = row.ptr<float>(0);
+	for (size_t i = start; i <= start + length * 2; i += 2)
+	{
+		std::complex<float> test(p[i], p[i+1]);
+		result += test;
+	}
+	return result / (float)length;
+}
+
 void lineDftFilter(cv::Mat& source, cv::Mat& target)
 {
 	double t = (double)getTickCount();
@@ -758,6 +770,7 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 
 	int range1_start = /*700 * channels;*/ pos_dft - (pos_dft / 5);
 	int range1_close = /*800 * channels;*/ pos_dft + (pos_dft / 5);
+
 	int range2_start = /*(nCols - 800) * channels;*/ neg_dft - (pos_dft / 5);
 	int range2_close = /*(nCols - 700) * channels;*/ neg_dft + (pos_dft / 5);
 
@@ -799,39 +812,40 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 		}
 		updated = true;
 
-		int count = 0;
-		float sum_sqr_re = 0;
-		float sum_sqr_im = 0;
+		// Irrtum - wird nicht gebraucht
+		//int count = 0;
+		//float sum_sqr_re = 0;
+		//float sum_sqr_im = 0;
 
-		std::complex<float> cmean(0.0, 0.0);
-		std::complex<float> csumsqr(0.0, 0.0);
-		for (size_t i = range1_start; i <= range1_close; i += 2)
-		{
-			float re = p[i + 0];
-			float im = p[i + 1];
-			std::complex<float> v(re, im);
-			if (re < min_re) { min_re = re; }
-			if (max_re < re) { max_re = re; pos_max_re = i; }
-			if (im < min_im) { min_im = im; }
-			if (max_im < im) { max_im = im; pos_max_im = i; }
-			mean_re += p[i + 0];
-			mean_im += p[i + 1];
-			cmean += v;
-			sum_sqr_re += p[i + 0] * p[i + 0];
-			sum_sqr_im += p[i + 1] * p[i + 1];
-			csumsqr += v * v;
-			count++;
-		}
-		mean_re /= (range1_close - range1_start) / channels;
-		mean_im /= (range1_close - range1_start) / channels;
-		cmean /= (range1_close - range1_start) / channels;
-		// Standardabweichung
-		float mean_sqr_re = (mean_re*mean_re*count);
-		float std_dev_re = sqrt((sum_sqr_re - mean_sqr_re) / (float)count);
-		float mean_sqr_im = (mean_im*mean_im*count);
-		float std_dev_im = sqrt((sum_sqr_im - mean_sqr_im) / (float)count);
-		std::complex<float> cmeansqr = (cmean*cmean*(float)count);
-		std::complex<float> cstddev = sqrt((csumsqr - cmeansqr) / (float)count);
+		//std::complex<float> cmean(0.0, 0.0);
+		//std::complex<float> csumsqr(0.0, 0.0);
+		//for (size_t i = range1_start; i <= range1_close; i += 2)
+		//{
+		//	float re = p[i + 0];
+		//	float im = p[i + 1];
+		//	std::complex<float> v(re, im);
+		//	if (re < min_re) { min_re = re; }
+		//	if (max_re < re) { max_re = re; pos_max_re = i; }
+		//	if (im < min_im) { min_im = im; }
+		//	if (max_im < im) { max_im = im; pos_max_im = i; }
+		//	mean_re += p[i + 0];
+		//	mean_im += p[i + 1];
+		//	cmean += v;
+		//	sum_sqr_re += p[i + 0] * p[i + 0];
+		//	sum_sqr_im += p[i + 1] * p[i + 1];
+		//	csumsqr += v * v;
+		//	count++;
+		//}
+		//mean_re /= (range1_close - range1_start) / channels;
+		//mean_im /= (range1_close - range1_start) / channels;
+		//cmean /= (range1_close - range1_start) / channels;
+		//// Standardabweichung
+		//float mean_sqr_re = (mean_re*mean_re*count);
+		//float std_dev_re = sqrt((sum_sqr_re - mean_sqr_re) / (float)count);
+		//float mean_sqr_im = (mean_im*mean_im*count);
+		//float std_dev_im = sqrt((sum_sqr_im - mean_sqr_im) / (float)count);
+		//std::complex<float> cmeansqr = (cmean*cmean*(float)count);
+		//std::complex<float> cstddev = sqrt((csumsqr - cmeansqr) / (float)count);
 
 		// rennt durch alle werte und setzt bereich auf null
 		//for (int col = 0; col <= nCols * channels; col+=2)
@@ -849,16 +863,54 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 		//	}
 		//}
 
+		// Mittelwerte links und rechts finden
+		int rangeWidth = pos_dft / 10;
+		std::complex<float> range1Pre = calc_range_mean(dft_row, range1_start - rangeWidth, rangeWidth);
+		std::complex<float> range1Post = calc_range_mean(dft_row, range1_close, rangeWidth);
+		std::complex<float> range2Pre = calc_range_mean(dft_row, range2_start - rangeWidth, rangeWidth);
+		std::complex<float> range2Post = calc_range_mean(dft_row, range2_close, rangeWidth);
+
+		// Interpolation innerhalb der Range
+		cv::Mat dft_row_inter = source.row(row).clone();
+		auto p_inter = dft_row_inter.ptr<float>(0);
+
+		auto offset1 = (range1Post - range1Pre) / (float)rangeWidth;
+		for (int col = range1_start, k = 0; col < range1_close; col += 2, ++k) {
+			p_inter[col + 0] = range1Pre.real() + k * offset1.real();
+			p_inter[col + 1] = range1Pre.imag() + k * offset1.imag();
+		}
+
+		auto offset2 = (range2Post - range2Pre) / (float)rangeWidth;
+		for (int col = range2_start, k = 0; col < range2_close; col += 2, ++k) {
+			p_inter[col + 0] = range2Pre.real() + k * offset2.real();
+			p_inter[col + 1] = range2Pre.imag() + k * offset2.imag();
+		}
+
+		//target.push_back(dft_row_inter);
+
 		// Gaussian band stop filter
-		std::complex<float> mean(cmean);// mean(mean_re, mean_im);
+		//std::complex<float> mean(cmean);// mean(mean_re, mean_im);
 		//std::complex<float> std_dev(cstddev);// std_dev(0.1, 0.1);// (std_dev_re, std_dev_im);
 		float std_dev = 1.0;
 		auto pCurve = curve.ptr<float>(0);
 		for (int col = 0; col < nCols * channels; col += 2) {
 			std::complex<float> vcur(p[col + 0], p[col + 1]);
+			std::complex<float> vcur_inter(p_inter[col + 0], p_inter[col + 1]);
+
+			// ursprünglich ohne Interpolation
+			//auto c = vcur * pCurve[col / 2];
+
+			// neu: mit interpolierten Werten
+			float x = pCurve[col / 2];
+			if (x < 0.5)
+			{
+				float z = 1;
+			}
+
+			auto c = vcur_inter + ((vcur - vcur_inter) * x);
 
 			//auto l = std::pow(0.5f, vcur * std::conj(vcur));
-			auto c = vcur * pCurve[col / 2];
+			//auto c = vcur * pCurve[col / 2];
 			//auto c = std::complex<float>(x, vcur.imag());
 
 			std::feclearexcept(FE_ALL_EXCEPT);
@@ -1018,14 +1070,16 @@ int main(int argc, char ** argv)
 	////cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
 	////shiftDFT(dft_row);
 
-	//cv::Mat inverted;
-	//lineDftInvert(filtered, inverted);
-	////showImage("DFT inverted float", inverted, screen);
+	cv::Mat inverted;
+	lineDftInvert(filtered, inverted);
+	showImage("DFT inverted float", inverted, screen);
 
 	//chan = inverted.channels();		// 1
 	//type = inverted.type();			// 5 - CV_32FC1
 
-	//save_matrix_to_short_file(inverted, "c:/Temp/LineWiseInverted.pgm");
+	//save_matrix_to_short_file(inverted, "c:/Temp/LineWiseInverted.raw");
+
+	save_matrix_to_pgm_file(inverted, "c:/Temp/LineWiseInverted.pgm");
 
 	//cv::waitKey();
 
