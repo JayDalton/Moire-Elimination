@@ -1039,47 +1039,50 @@ int main(int argc, char ** argv)
 	lineDftPerfom(floatImage, dftImage);
 
 	cv::Mat magnitude;
-	//format_matrix_to_magnitude(dftImage, magnitude);
+	format_matrix_to_magnitude(dftImage, magnitude);
 	//save_matrix_to_format_file(magnitude, inputName + "_magnitude.log");
-	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw");
+
+	// save file to f32 
+	save_matrix_to_binary_file(magnitude, inputName + "_magnitude.mag.original");
+	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw.filtered");
 	//save_matrix_to_short_file(magnitude, inputName + "_transform.raw");
 	//print_matrix_to_log_file(magnitude, inputName + "_transform.log");
 
-	showDFT("DFT complex Image", dftImage, screen, false);
-	showDFT("DFT centered Image", dftImage, screen, true);
+	//showDFT("DFT complex Image", dftImage, screen, false);
+	//showDFT("DFT centered Image", dftImage, screen, true);
 
-	int chan = dftImage.channels();	// 2
-	int type = dftImage.type();		// 13 - CV_32FC2
+	//int chan = dftImage.channels();	// 2
+	//int type = dftImage.type();		// 13 - CV_32FC2
 
-	////cv::Mat absolute;
-	////lineDftAbsolute(dftImage, absolute);
-	////lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
+	//////cv::Mat absolute;
+	//////lineDftAbsolute(dftImage, absolute);
+	//////lineDftFilePrint(absolute, "C:/Temp/LineWiseDftAbsolute.log");
 
-	cv::Mat filtered, filterview;
-	lineDftFilter(dftImage, filtered);
-	format_matrix_to_magnitude(filtered, filterview);
-	save_matrix_to_format_file(filterview, inputName + "_filtered.log");
-	//lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
+	//cv::Mat filtered, filterview;
+	//lineDftFilter(dftImage, filtered);
+	//format_matrix_to_magnitude(filtered, filterview);
+	//save_matrix_to_format_file(filterview, inputName + "_filtered.log");
+	////lineDftFilePrint(filtered, "C:/Temp/LineWiseDftFiltered.log");
 
-	////cv::Size filterSize = cv::Size(4320, 4320);
-	////cv::Mat filterTest = createGaussianHighPassFilter(filterSize, 0);
-	//
+	//////cv::Size filterSize = cv::Size(4320, 4320);
+	//////cv::Mat filterTest = createGaussianHighPassFilter(filterSize, 0);
+	////
 
-	//// apply filter
-	////shiftDFT(dft_row);
-	////cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
-	////shiftDFT(dft_row);
+	////// apply filter
+	//////shiftDFT(dft_row);
+	//////cv::mulSpectrums(dft_row, filter, dft_row, DFT_ROWS, true);
+	//////shiftDFT(dft_row);
 
-	cv::Mat inverted;
-	lineDftInvert(filtered, inverted);
-	showImage("DFT inverted float", inverted, screen);
+	//cv::Mat inverted;
+	//lineDftInvert(filtered, inverted);
+	//showImage("DFT inverted float", inverted, screen);
 
-	//chan = inverted.channels();		// 1
-	//type = inverted.type();			// 5 - CV_32FC1
+	////chan = inverted.channels();		// 1
+	////type = inverted.type();			// 5 - CV_32FC1
 
-	//save_matrix_to_short_file(inverted, "c:/Temp/LineWiseInverted.raw");
+	////save_matrix_to_short_file(inverted, "c:/Temp/LineWiseInverted.raw");
 
-	save_matrix_to_pgm_file(inverted, "c:/Temp/LineWiseInverted.pgm");
+	//save_matrix_to_pgm_file(inverted, "c:/Temp/LineWiseInverted.pgm");
 
 	//cv::waitKey();
 

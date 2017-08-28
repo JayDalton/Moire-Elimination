@@ -151,6 +151,83 @@ namespace ChartInUWP
       }
     }
 
+    private async Task ReadBinaryData()
+    {
+      var picker = new FileOpenPicker();
+      picker.ViewMode = PickerViewMode.List;
+      picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+      picker.FileTypeFilter.Add("*");
+
+      StorageFile file = await picker.PickSingleFileAsync();
+      if (file != null)
+      {
+        LoadProgress.IsActive = true;
+        LoadProgress.Visibility = Visibility.Visible;
+        try
+        {
+          _data.Clear();
+          var rows = default(int);
+          var maxInputValue = double.MinValue;
+          var minInputValue = double.MaxValue;
+
+          const int WIDTH = 4320;
+          const int HEIGHT = 4320;
+
+          var content = await FileIO.ReadBufferAsync(file);
+
+          if (content.Length != WIDTH * HEIGHT * sizeof(float))
+          {
+            return;
+          }
+
+          using (var reader = new BinaryReader(content.AsStream()))
+          {
+            for (int row = 0; row < HEIGHT; ++row)
+            {
+              var values = new List<double>();
+              for (int col = 0; col < WIDTH; ++col)
+              {
+                values.Add(reader.ReadSingle());
+              }
+              maxInputValue = Math.Max(maxInputValue, values.Max());
+              minInputValue = Math.Min(minInputValue, values.Min());
+              _data.Add(row, values);
+            }
+          }
+
+          if (_data.Count > 0)
+          {
+            GraphMoveY.Maximum = _data.Count - 1;
+            GraphMoveY.Minimum = 0;
+            GraphMoveY.Value = 0;
+
+            GraphScaleY.Maximum = maxInputValue;
+            GraphScaleY.Minimum = minInputValue;
+            GraphScaleY.Value = maxInputValue;
+
+            GraphMoveX.Maximum = _data[0].Count - 1;
+            GraphMoveX.Minimum = 0;
+            GraphMoveX.Value = 0;
+
+            GraphScaleX.Maximum = 2;    // 
+            GraphScaleX.Minimum = GraphCanvas.ActualWidth / _data[0].Count;    // da passt ALLES rein
+            GraphScaleX.Value = GraphCanvas.ActualWidth / _data[0].Count;
+            GraphScaleX.SnapsTo = SliderSnapsTo.StepValues;
+            GraphScaleX.StepFrequency = Math.Abs(GraphScaleX.Maximum - GraphScaleX.Minimum) / 10;
+
+            GraphCanvas.Invalidate();
+          }
+        }
+        catch (Exception ex)
+        {
+          Debug.WriteLine(ex.Message);
+          throw;
+        }
+        LoadProgress.IsActive = false;
+        LoadProgress.Visibility = Visibility.Collapsed;
+      }
+    }
+
     private async Task ReadInputData()
     {
       var picker = new FileOpenPicker();
@@ -309,7 +386,8 @@ namespace ChartInUWP
     {
       GraphCanvas.Visibility = Visibility.Visible;
       GreyImageGrid.Visibility = Visibility.Collapsed;
-      await ReadInputData();
+      await ReadBinaryData();
+      //await ReadInputData();
     }
 
     private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
