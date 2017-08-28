@@ -1043,6 +1043,8 @@ int main(int argc, char ** argv)
 	//save_matrix_to_format_file(magnitude, inputName + "_magnitude.log");
 
 	// save file to f32 
+	// save_magnitude_to_binary_file(magnitude, ".mag.original");
+	// save_magnitude_to_format_file(magnitude, ".mag.filtered");
 	save_matrix_to_binary_file(magnitude, inputName + "_magnitude.mag.original");
 	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw.filtered");
 	//save_matrix_to_short_file(magnitude, inputName + "_transform.raw");
