@@ -43,6 +43,7 @@
         <ProgressRing 
             x:Name="LoadProgress" 
             Grid.Row="0" Grid.Column="0" 
+            IsActive="{x:Bind viewModel.Progressing, Mode=OneWay}"
             Width="50" Height="50"/>
 
         <Grid Grid.Row="1" Grid.Column="0">
