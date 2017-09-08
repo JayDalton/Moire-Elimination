@@ -57,112 +57,6 @@ namespace ChartInUWP
       //await ReadInputData();
     }
 
-    //private void GraphMoveY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphMoveY.Value < GraphMoveY.Maximum)
-    //  {
-    //    GraphMoveY.Value++; 
-    //  }
-    //}
-
-    //private void GraphMoveYDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphMoveY.Value)
-    //  {
-    //    GraphMoveY.Value--;
-    //  }
-    //}
-
-    //private void GraphScaleY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphScaleYDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphScaleY.Value)
-    //  {
-    //    GraphScaleY.Value--;
-    //  }
-    //}
-
-    //private void GraphScaleYIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphScaleY.Value < GraphScaleY.Maximum)
-    //  {
-    //    GraphScaleY.Value++;
-    //  }
-    //}
-
-    //private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  var x = e.NewValue;
-
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphScaleXIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphScaleX.Value < GraphScaleX.Maximum)
-    //  {
-    //    GraphScaleX.Value++;
-    //  }
-    //}
-
-    //private void GraphScaleXDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphScaleX.Value)
-    //  {
-    //    GraphScaleX.Value--;
-    //  }
-    //}
-
-    //private void GraphMoveX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphMoveXIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphMoveX.Value < GraphMoveX.Maximum)
-    //  {
-    //    GraphMoveX.Value++;
-    //  }
-    //}
-
-    //private void GraphMoveXDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphMoveX.Value)
-    //  {
-    //    GraphMoveX.Value--;
-    //  }
-    //}
-
-    //private async void LoadDataButton_Click(object sender, RoutedEventArgs e)
-    //{
-    //  GraphCanvas.Visibility = Visibility.Visible;
-    //  GreyImageGrid.Visibility = Visibility.Collapsed;
-    //  await viewModel.LoadChartMatrixFile();
-    //  //await ReadBinaryData();
-    //  //await ReadInputData();
-    //}
-
-    //private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
-    //{
-    //  GraphCanvas.Visibility = Visibility.Collapsed;
-    //  GreyImageGrid.Visibility = Visibility.Visible;
-    //  await viewModel.RenderRawImage();
-    //  //await RenderRawImage();
-    //}
-
-
-    // reverse byte order (16-bit)
-
     public static UInt16 ReverseBytes(UInt16 value)
     {
       return (UInt16)((value & 0xFFU) << 8 | (value & 0xFF00U) >> 8);
@@ -183,6 +77,7 @@ namespace ChartInUWP
              (value & 0x000000FF00000000UL) >>  8 | (value & 0x0000FF0000000000UL) >> 24 |
              (value & 0x00FF000000000000UL) >> 40 | (value & 0xFF00000000000000UL) >> 56;
     }
+
   }
 
 }

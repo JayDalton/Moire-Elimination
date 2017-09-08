@@ -99,6 +99,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="ChartLoader.cs" />
+    <Compile Include="ChartService.cs" />
     <Compile Include="ChartRenderer.cs" />
     <Compile Include="ImageLoader.cs" />
     <Compile Include="ImageRenderer.cs" />

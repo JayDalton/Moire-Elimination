@@ -57,21 +57,21 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <Button 
+            <!--<Button 
                 x:Name="GraphScaleXDecrease"
                 Click="GraphScaleXDecrease_Click"
                 Grid.Row="0" Grid.Column="0" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
 
             <Slider 
                 x:Name="GraphScaleX" 
+                Value="{x:Bind viewModel.ChartScaleCol, Mode=TwoWay}"
                 Grid.Row="0" Grid.Column="1" Header="Scale X" 
-                Maximum="10.0" Minimum="1.0" Margin="10, 0"
-                ValueChanged="GraphScaleX_ValueChanged"/>
+                Maximum="10.0" Minimum="1.0" Margin="10, 0"/>
             
-            <Button 
+            <!--<Button 
                 x:Name="GraphScaleXIncrease"
                 Click="GraphScaleXIncrease_Click"
                 Grid.Row="0" Grid.Column="2" 
@@ -85,20 +85,20 @@
                 Grid.Row="1" Grid.Column="0" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
 
             <Slider 
                 x:Name="GraphMoveX" 
-                Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"
-                ValueChanged="GraphMoveX_ValueChanged"/>
+                Value="{x:Bind viewModel.ChartMoveCol, Mode=TwoWay}"
+                Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"/>
 
-            <Button 
+            <!--<Button 
                 x:Name="GraphMoveXIncrease"
                 Click="GraphMoveXIncrease_Click"
                 Grid.Row="1" Grid.Column="2" 
                 VerticalAlignment="Stretch">
                 <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
         </Grid>
 
         <Grid Grid.Row="0" Grid.Column="1">
@@ -112,23 +112,23 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Button 
+            <!--<Button 
                 x:Name="GraphScaleYDecrease"
                 Click="GraphScaleYDecrease_Click"
                 Grid.Row="0" Grid.Column="0" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
 
             <Slider 
                 x:Name="GraphScaleY"  Header="Scale"
                 Grid.Row="1" Grid.Column="0" Margin="0, 10"
-                Orientation="Vertical" IsDirectionReversed="True" 
-                ValueChanged="GraphScaleY_ValueChanged"/>
+                Value="{x:Bind viewModel.ChartScaleRow, Mode=TwoWay}"
+                Orientation="Vertical" IsDirectionReversed="True"/>
 
-            <Button 
+            <!--<Button 
                 x:Name="GraphScaleYIncrease"
-                Click="GraphScaleYIncrease_Click"
+                Click="{x:Bind GraphScaleY.(IValueProvider.Value)}"
                 Grid.Row="2" Grid.Column="0" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
@@ -140,21 +140,21 @@
                 Grid.Row="0" Grid.Column="1" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
 
             <Slider 
                 x:Name="GraphMoveY" Header="Move"  
                 Grid.Row="1" Grid.Column="1" Margin="0, 10"
-                Orientation="Vertical" IsDirectionReversed="True" 
-                ValueChanged="GraphMoveY_ValueChanged"/>
+                Value="{x:Bind viewModel.ChartMoveRow, Mode=TwoWay}"
+                Orientation="Vertical" IsDirectionReversed="True"/>
 
-            <Button 
+            <!--<Button 
                 x:Name="GraphMoveYIncrease"
                 Click="GraphMoveYIncrease_Click"
                 Grid.Row="2" Grid.Column="1" 
                 HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
+            </Button>-->
         </Grid>
 
         <Grid Grid.Row="1" Grid.Column="1">
@@ -163,19 +163,13 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Button 
-                x:Name="LoadDataButton" Grid.Row="0"
-                Content="Load Matrix" 
-                Click="{x:Bind viewModel.LoadChartMatrixFile_Click}" 
-                Background="OrangeRed"
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch"/>
+                Grid.Row="0" Content="Load Matrix" Background="OrangeRed"
+                Click="{x:Bind viewModel.LoadChartDataFile_Click}" 
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             <Button 
-                x:Name="LoadImageButton" Grid.Row="1"
-                Content="Load Image" 
+                Grid.Row="1" Content="Load Image" Background="OrangeRed"
                 Click="{x:Bind viewModel.LoadImageContentFile_Click}" 
-                Background="OrangeRed"
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch"/>
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
     </Grid>
 </Page>

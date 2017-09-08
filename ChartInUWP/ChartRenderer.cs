@@ -45,6 +45,43 @@ namespace ChartInUWP
       //_chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value, GraphScaleX.Value);
     }
 
+    private void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY, double scaleX)
+    {
+      if (data.Count == 0) return;
+
+      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
+      {
+        cpb.BeginFigure(
+          new Vector2(0,
+            (float)(/*canvas.ActualHeight - */data[0] * canvas.ActualHeight / maxY)
+          )
+        );
+
+        for (int i = 1; i < data.Count; i++)
+        {
+          cpb.AddLine(
+            new Vector2(
+              i * (float)scaleX,
+              (float)(/*canvas.ActualHeight - */data[i] * canvas.ActualHeight / maxY)
+            )
+          );
+        }
+
+        if (renderArea)
+        {
+          cpb.AddLine(new Vector2(data.Count, (float)canvas.ActualHeight));
+          cpb.AddLine(new Vector2(0, (float)canvas.ActualHeight));
+          cpb.EndFigure(CanvasFigureLoop.Closed);
+          args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), Colors.LightGreen);
+        }
+        else
+        {
+          cpb.EndFigure(CanvasFigureLoop.Open);
+          args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
+        }
+      }
+    }
+
     public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY, double scaleX, int count = 4320)
     {
       var width = (float)canvas.ActualWidth;
@@ -107,45 +144,9 @@ namespace ChartInUWP
       //args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
     }
 
-    public void RenderData(
-      CanvasControl canvas, CanvasDrawEventArgs args, Color color,
-      float thickness, List<double> data, bool renderArea,
-      double maxY, double scaleX
-      )
+    internal Task LoadChartDataFromFile()
     {
-      if (data.Count == 0) return;
-
-      using (var cpb = new CanvasPathBuilder(args.DrawingSession))
-      {
-        cpb.BeginFigure(
-          new Vector2(0,
-            (float)(/*canvas.ActualHeight - */data[0] * canvas.ActualHeight / maxY)
-          )
-        );
-
-        for (int i = 1; i < data.Count; i++)
-        {
-          cpb.AddLine(
-            new Vector2(
-              i * (float)scaleX,
-              (float)(/*canvas.ActualHeight - */data[i] * canvas.ActualHeight / maxY)
-            )
-          );
-        }
-
-        if (renderArea)
-        {
-          cpb.AddLine(new Vector2(data.Count, (float)canvas.ActualHeight));
-          cpb.AddLine(new Vector2(0, (float)canvas.ActualHeight));
-          cpb.EndFigure(CanvasFigureLoop.Closed);
-          args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), Colors.LightGreen);
-        }
-        else
-        {
-          cpb.EndFigure(CanvasFigureLoop.Open);
-          args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
-        }
-      }
+      throw new NotImplementedException();
     }
 
     public void RenderAveragesAsColumns(CanvasControl canvas, CanvasDrawEventArgs args, int columnAvgDataRange, float columnWidth, List<double> data)

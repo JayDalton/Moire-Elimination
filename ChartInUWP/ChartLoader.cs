@@ -25,6 +25,12 @@ namespace ChartInUWP
 
     }
 
+    #region Properties
+
+    public float[][] ChartData { get; set; }
+
+    #endregion Properties
+
     #region Methods
 
     public async Task LoadFileSelection()
