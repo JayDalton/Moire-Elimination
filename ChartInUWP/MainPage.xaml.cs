@@ -30,11 +30,26 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
 using Windows.UI.Xaml.Media.Imaging;
+using MessagePack;
 
 // Die Elementvorlage "Leere Seite" wird unter https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x407 dokumentiert.
 
 namespace ChartInUWP
 {
+  [MessagePackObject]
+  public class Matrix
+  {
+    [Key(0)]
+    public short rows { get; set; }
+
+    [Key(1)]
+    public short cols { get; set; }
+
+    [Key(2)]
+    public double[] data { get; set; } // IList<short>
+  }
+
+
   /// <summary>
   /// Eine leere Seite, die eigenständig verwendet oder zu der innerhalb eines Rahmens navigiert werden kann.
   /// </summary>
@@ -171,7 +186,7 @@ namespace ChartInUWP
         try
         {
           _data.Clear();
-          var rows = default(int);
+          //var rows = default(int);
           var maxInputValue = double.MinValue;
           var minInputValue = double.MaxValue;
 
@@ -179,6 +194,11 @@ namespace ChartInUWP
           const int HEIGHT = 4320;
 
           var content = await FileIO.ReadBufferAsync(file);
+
+          var serializer = MessagePackSerializer.Deserialize<Matrix>(content.AsStream());
+          var cols = serializer.cols;
+          var rows = serializer.rows;
+          var data = serializer.data;
 
           if (content.Length != WIDTH * HEIGHT * sizeof(float))
           {
@@ -392,7 +412,7 @@ namespace ChartInUWP
       GraphCanvas.Visibility = Visibility.Visible;
       GreyImageGrid.Visibility = Visibility.Collapsed;
       await viewModel.LoadChartFileData();
-      await ReadBinaryData();
+      //await ReadBinaryData();
       //await ReadInputData();
     }
 
