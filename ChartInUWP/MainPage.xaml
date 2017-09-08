@@ -28,8 +28,8 @@
         </ScrollViewer>-->
         <canvas:CanvasControl 
             x:Name="GraphCanvas" 
-            Grid.Row="0" Grid.Column="0" 
-            Draw="OnDrawGraph" Margin="5"/>
+            Grid.Row="0" Grid.Column="0"
+            Draw="{x:Bind viewModel.RenderChartCanvas, Mode=OneWay}" Margin="5"/>
 
         <Grid x:Name="GreyImageGrid">
             <Grid.ColumnDefinitions>
@@ -164,15 +164,15 @@
             </Grid.RowDefinitions>
             <Button 
                 x:Name="LoadDataButton" Grid.Row="0"
-                Content="Load Data" 
-                Click="LoadDataButton_Click" 
+                Content="Load Matrix" 
+                Click="{x:Bind viewModel.LoadChartMatrixFile_Click}" 
                 Background="OrangeRed"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
             <Button 
                 x:Name="LoadImageButton" Grid.Row="1"
                 Content="Load Image" 
-                Click="LoadImageButton_Click" 
+                Click="{x:Bind viewModel.LoadImageContentFile_Click}" 
                 Background="OrangeRed"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>

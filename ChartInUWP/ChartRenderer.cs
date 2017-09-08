@@ -14,6 +14,37 @@ namespace ChartInUWP
 {
   public class ChartRenderer
   {
+    #region Fields
+
+    #endregion Fields
+
+    public ChartRenderer()
+    {
+
+    }
+
+    #region Properties
+
+    #endregion Properties
+
+    #region Methods
+
+    public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
+    {
+      args.DrawingSession.Clear(Colors.White);
+      //if (_data.ContainsKey((int)GraphMoveY.Value))
+      //{
+      //  //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
+      //  //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
+      //  var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
+      //  _chartRenderer.RenderData(
+      //    GraphCanvas, args, Colors.Black, DataStrokeThickness,
+      //    values, false, GraphScaleY.Value, GraphScaleX.Value
+      //    );
+      //}
+      //_chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value, GraphScaleX.Value);
+    }
+
     public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY, double scaleX, int count = 4320)
     {
       var width = (float)canvas.ActualWidth;
@@ -251,5 +282,7 @@ namespace ChartInUWP
         args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
       }
     }
+
+    #endregion Methods
   }
 }

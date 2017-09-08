@@ -16,6 +16,8 @@ namespace ChartInUWP
   {
     #region Fields
 
+    private float[][] _chart;
+
     #endregion Fields
 
     public ChartLoader()
@@ -41,47 +43,49 @@ namespace ChartInUWP
           var maxInputValue = double.MinValue;
           var minInputValue = double.MaxValue;
 
-          const int WIDTH = 4320;
-          const int HEIGHT = 4320;
+          //const int WIDTH = 4320;
+          //const int HEIGHT = 4320;
 
           var content = await FileIO.ReadBufferAsync(file);
 
-          var mtx = new Matrix
-          {
-            cols = 2,
-            rows = 3,
-            data = new double[] { 1, 2, 3 }
-          };
+          //var mtx = new Matrix
+          //{
+          //  rows = 3,
+          //  cols = 2,
+          //  data = new float[] { 1, 2, 3 }
+          //};
 
-          var serial = MessagePackSerializer.Serialize<Matrix>(mtx);
-          var matrix = MessagePackSerializer.Deserialize<Matrix>(serial);
-          var a = matrix.cols;
-          var b = matrix.rows;
-          var c = matrix.data;
+          //var serial = MessagePackSerializer.Serialize<Matrix>(mtx);
+          //var matrix = MessagePackSerializer.Deserialize<Matrix>(serial);
+          //var a = matrix.cols;
+          //var b = matrix.rows;
+          //var c = matrix.data;
 
-          var serializer = MessagePackSerializer.Deserialize<Matrix>(content.AsStream());
-          var cols = serializer.cols;
-          var rows = serializer.rows;
-          var data = serializer.data;
+          var matrix = MessagePackSerializer.Deserialize<Matrix>(content.AsStream());
+          var cols = matrix.cols;
+          var rows = matrix.rows;
+          var data = matrix.data;
 
-          if (content.Length != WIDTH * HEIGHT * sizeof(float))
+          if (data.Length != matrix.cols * matrix.rows)
           {
             return;
           }
 
+
+
           using (var reader = new BinaryReader(content.AsStream()))
           {
-            for (int row = 0; row < HEIGHT; ++row)
-            {
-              var values = new List<double>();
-              for (int col = 0; col < WIDTH; ++col)
-              {
-                values.Add(reader.ReadSingle());
-              }
-              maxInputValue = Math.Max(maxInputValue, values.Max());
-              minInputValue = Math.Min(minInputValue, values.Min());
-              //_data.Add(row, values);
-            }
+            //for (int row = 0; row < HEIGHT; ++row)
+            //{
+            //  var values = new List<double>();
+            //  for (int col = 0; col < WIDTH; ++col)
+            //  {
+            //    values.Add(reader.ReadSingle());
+            //  }
+            //  maxInputValue = Math.Max(maxInputValue, values.Max());
+            //  minInputValue = Math.Min(minInputValue, values.Min());
+            //  //_data.Add(row, values);
+            //}
           }
 
         }

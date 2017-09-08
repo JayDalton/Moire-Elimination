@@ -569,7 +569,50 @@ void save_matrix_to_format_file(cv::Mat& source, std::string filename)
 	cout << "saved raw file: " << t << endl;
 }
 
-void save_matrix_to_binary_file(cv::Mat& source, std::string filename)
+void save_matrix_to_binary_float(cv::Mat& source, std::string filename)
+{
+	double t = (double)getTickCount();
+	auto chans = source.channels();		// 1
+	if (chans != 1)
+	{
+		std::cout << "NOT saved! channels " << chans << std::endl;
+		return;
+	}
+
+	auto mType = source.type();
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
+	{
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	if (mType == CV_32F)
+	{
+		for (int row = 0; row < nRows; ++row)
+		{
+			auto sz = sizeof(float);
+			auto p = source.ptr<float>(row);
+			for (int col = 0; col < nCols; ++col)
+			{
+				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+			}
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	cout << "saved raw file: " << t << endl;
+}
+
+void save_matrix_to_binary_short(cv::Mat& source, std::string filename)
 {
 	double t = (double)getTickCount();
 
@@ -602,18 +645,6 @@ void save_matrix_to_binary_file(cv::Mat& source, std::string filename)
 		{
 			auto sz = sizeof(unsigned short);
 			auto p = source.ptr<unsigned short>(row);
-			for (int col = 0; col < nCols; ++col)
-			{
-				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
-			}
-		}
-	}
-	else if (mType == CV_32F) 
-	{
-		for (int row = 0; row < nRows; ++row)
-		{
-			auto sz = sizeof(float);
-			auto p = source.ptr<float>(row);
 			for (int col = 0; col < nCols; ++col)
 			{
 				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
@@ -1034,6 +1065,7 @@ int main(int argc, char ** argv)
 	// write float matrix
 	//save_matrix_to_pgm_file(floatImage, inputName + "_float.pgm");
 	//save_matrix_to_short_file(floatImage, inputName + "_float.raw");
+	save_matrix_to_binary_short(floatImage, inputName + ".flt");
 
 	cv::Mat dftImage;
 	lineDftPerfom(floatImage, dftImage);
@@ -1045,7 +1077,7 @@ int main(int argc, char ** argv)
 	// save file to f32 
 	// save_magnitude_to_binary_file(magnitude, ".mag.original");
 	// save_magnitude_to_format_file(magnitude, ".mag.filtered");
-	save_matrix_to_binary_file(magnitude, inputName + "_magnitude.mag.original");
+	save_matrix_to_binary_short(magnitude, inputName + "_magnitude.mag.original");
 	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw.filtered");
 	//save_matrix_to_short_file(magnitude, inputName + "_transform.raw");
 	//print_matrix_to_log_file(magnitude, inputName + "_transform.log");
