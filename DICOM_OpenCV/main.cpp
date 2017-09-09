@@ -14,8 +14,15 @@
 #include <math.h>
 #include <cfenv>
 
-using namespace cv;
-using namespace std;
+//using namespace cv;
+//using namespace std;
+
+int64 dump_duration(int64 now, std::string label) 
+{
+	auto duration = cv::getTickCount() - now;
+	std::cout << label << ": " << duration / cv::getTickFrequency() << std::endl;
+	return cv::getTickCount();
+}
 
 void recenterDFT(cv::Mat& source) 
 {
@@ -96,7 +103,7 @@ cv::Mat create1dGaussianCurve(cv::Mat& source)
 
 cv::Mat createGaussianHighPassFilter(cv::Size size, float cutoffInPixels)
 {
-	Mat ghpf(size, CV_32F);
+	cv::Mat ghpf(size, CV_32F);
 
 	cv::Point center(size.width / 2, size.height / 2);
 
@@ -131,11 +138,11 @@ void createGaussian(cv::Size& size, cv::Mat& output, int uX, int uY, float sigma
 
 // create a 2-channel butterworth low-pass filter with radius D, order n
 // (assumes pre-aollocated size of dft_Filter specifies dimensions)
-void createButterworthLowpassFilter(Mat &dft_Filter, int D, int n)
+void createButterworthLowpassFilter(cv::Mat &dft_Filter, int D, int n)
 {
-	Mat tmp = Mat(dft_Filter.rows, dft_Filter.cols, CV_32F);
+	cv::Mat tmp = cv::Mat(dft_Filter.rows, dft_Filter.cols, CV_32F);
 
-	Point centre = Point(dft_Filter.rows / 2, dft_Filter.cols / 2);
+	cv::Point centre = cv::Point(dft_Filter.rows / 2, dft_Filter.cols / 2);
 	double radius;
 
 	for (int i = 0; i < dft_Filter.rows; i++)
@@ -147,15 +154,15 @@ void createButterworthLowpassFilter(Mat &dft_Filter, int D, int n)
 		}
 	}
 
-	Mat toMerge[] = { tmp, tmp };
+	cv::Mat toMerge[] = { tmp, tmp };
 	merge(toMerge, 2, dft_Filter);
 }
 
 void createButterworthHighpassFilter(cv::Mat& dft_filter, int D, int n)
 {
-	Mat tmp = Mat(dft_filter.rows, dft_filter.cols, CV_32F);
+	cv::Mat tmp = cv::Mat(dft_filter.rows, dft_filter.cols, CV_32F);
 
-	Point centre = Point(dft_filter.rows / 2, dft_filter.cols / 2);
+	cv::Point centre = cv::Point(dft_filter.rows / 2, dft_filter.cols / 2);
 	double radius;
 
 	for (int i = 0; i < dft_filter.rows; i++)
@@ -167,7 +174,7 @@ void createButterworthHighpassFilter(cv::Mat& dft_filter, int D, int n)
 		}
 	}
 
-	Mat toMerge[] = { tmp, tmp };
+	cv::Mat toMerge[] = { tmp, tmp };
 	merge(toMerge, 2, dft_filter);
 }
 
@@ -182,12 +189,12 @@ void showMagImage(cv::Mat& image)
 	int cx = image.cols / 2;
 	int cy = image.rows / 2;
 
-	Mat q0(image, Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-	Mat q1(image, Rect(cx, 0, cx, cy));  // Top-Right
-	Mat q2(image, Rect(0, cy, cx, cy));  // Bottom-Left
-	Mat q3(image, Rect(cx, cy, cx, cy)); // Bottom-Right
+	cv::Mat q0(image, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+	cv::Mat q1(image, cv::Rect(cx, 0, cx, cy));  // Top-Right
+	cv::Mat q2(image, cv::Rect(0, cy, cx, cy));  // Bottom-Left
+	cv::Mat q3(image, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
 
-	Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+	cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
 	q0.copyTo(tmp);
 	q3.copyTo(q0);
 	tmp.copyTo(q3);
@@ -196,7 +203,7 @@ void showMagImage(cv::Mat& image)
 	q2.copyTo(q1);
 	tmp.copyTo(q2);
 
-	cv::normalize(image, image, 0, 1, NORM_MINMAX); // Transform the matrix with float values into a
+	cv::normalize(image, image, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
 													 // viewable image form (float between values 0 and 1).
 
 	cv::imshow("spectrum magnitude", image);
@@ -236,15 +243,14 @@ void write2ChannelLogFile(cv::Mat& image, const char* outfile)
 		return;
 	}
 
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	std::ostringstream oss1, oss2;
 	write2ChannelToString(image, oss1, oss2);
 	channel1 << oss1.str();
 	channel2 << oss2.str();
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Write 2 Channel LogFile in seconds: " << t << endl;
+	dump_duration(now, "Write 2 Channel LogFile in seconds: ");
 }
 
 void write1ChannelToString(cv::Mat& image, std::ostringstream& oss) 
@@ -276,38 +282,36 @@ void write1ChannelLogFile(cv::Mat& image, const char* outfile)
 		return;
 	}
 
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	std::ostringstream oss;
 	write1ChannelToString(image, oss);
 	logfile << oss.str();
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Write 1 Channel LogFile in seconds: " << t << endl;
+	dump_duration(now, "Write 1 Channel LogFile in seconds");
 }
 
 void performDFT(cv::Mat& source, cv::Mat& target)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	cv::Mat paddedImage;								// expand input image to optimal size
 	int m = cv::getOptimalDFTSize(source.rows);
 	int n = cv::getOptimalDFTSize(source.cols);		// on the border add zero values
-	cv::copyMakeBorder(source, paddedImage, 0, m - source.rows, 0, n - source.cols, BORDER_CONSTANT, Scalar::all(0));
+	cv::copyMakeBorder(source, paddedImage, 0, m - source.rows, 0, n - source.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 
-	cv::Mat planes[] = { Mat_<float>(paddedImage), Mat::zeros(paddedImage.size(), CV_32F) };
+	cv::Mat planes[] = { cv::Mat_<float>(paddedImage), cv::Mat::zeros(paddedImage.size(), CV_32F) };
 
 	cv::Mat complexI;
 	cv::merge(planes, 2, complexI);					// Add to the expanded another plane with zeros
-	cv::dft(complexI, target, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
+	cv::dft(complexI, target, cv::DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	//cout << "perform DFT in seconds: " << t << endl;
+	dump_duration(now, "perform DFT in seconds");
 }
 
 void lineDftInvert(cv::Mat& source, cv::Mat& target)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	for (int row = 0; row < source.rows; ++row)
 	{
@@ -318,13 +322,16 @@ void lineDftInvert(cv::Mat& source, cv::Mat& target)
 		target.push_back(inverse);
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "line dft invert: " << t << endl;
+	dump_duration(now, "line dft invert: ");
 }
 
-void lineDftPerfom(cv::Mat& source, cv::Mat& target) 
+void perform_dft_linewise(cv::Mat& source, cv::Mat& target) 
 {
-	double t = (double)getTickCount();
+	assert(source.depth() == CV_32F);		// 32 bit
+	assert(source.channels() == 1);			// 1 chan
+
+	auto now = cv::getTickCount();
+
 	for (int row = 0; row < source.rows; ++row)
 	{
 		cv::Mat one_row = source.row(row);
@@ -332,25 +339,27 @@ void lineDftPerfom(cv::Mat& source, cv::Mat& target)
 		cv::Mat paddedLine;								// expand input image to optimal size
 		int m = cv::getOptimalDFTSize(one_row.rows);
 		int n = cv::getOptimalDFTSize(one_row.cols);		// on the border add zero values
-		cv::copyMakeBorder(one_row, paddedLine, 0, m - one_row.rows, 0, n - one_row.cols, BORDER_CONSTANT, Scalar::all(0));
+		cv::copyMakeBorder(one_row, paddedLine, 0, m - one_row.rows, 0, n - one_row.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 
-		cv::Mat linePlanes[] = { Mat_<float>(paddedLine), Mat::zeros(paddedLine.size(), CV_32F) };
+		cv::Mat linePlanes[] = { cv::Mat_<float>(paddedLine), cv::Mat::zeros(paddedLine.size(), CV_32F) };
 
 		cv::Mat complexLine;
 		cv::merge(linePlanes, 2, complexLine);					// Add to the expanded another plane with zeros
 
-		cv::dft(complexLine, complexLine, DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
+		cv::dft(complexLine, complexLine, cv::DFT_COMPLEX_OUTPUT);	// this way the result may fit in the source matrix
 
 		target.push_back(complexLine);
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "line dft perform: " << t << endl;
+	dump_duration(now, "linedft perform");
 }
 
 void format_matrix_to_magnitude(cv::Mat& source, cv::Mat& target)
 {
-	double t = (double)getTickCount();
+	assert(source.depth() == CV_32F);		// 32 bit
+	assert(source.channels() == 2);			// 2 chan
+
+	auto now = cv::getTickCount();
 
 	for (int row = 0; row < source.rows; ++row)
 	{
@@ -361,28 +370,17 @@ void format_matrix_to_magnitude(cv::Mat& source, cv::Mat& target)
 
 		cv::Mat magI;									// => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
 		cv::magnitude(planes[0], planes[1], magI);		// planes[0] = magnitude
-		magI += Scalar::all(1);							// switch to logarithmic scale
+		magI += cv::Scalar::all(1);							// switch to logarithmic scale
 		cv::log(magI, magI);
 		target.push_back(magI);
-
-		//std::stringstream ss;
-		//float* p = target.ptr<float>(0);
-		//for (int col = 0; col < target.cols; ++col)
-		//{
-		//	if (0 < col) ss << ";";
-		//	ss << p[col];
-		//}
-		//ss << std::endl;
-		//ofs << ss.str();
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved log file: " << t << endl;
+	dump_duration(now, "saved log file");
 }
 
 void print_matrix_to_log_file(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	auto chan = source.channels();		// 1
 	if (chan != 1)
@@ -424,13 +422,12 @@ void print_matrix_to_log_file(cv::Mat& source, std::string filename)
 	}
 	ofs << ss.str();
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved log file: " << t << endl;
+	dump_duration(now, "saved log file: ");
 }
 
 void save_matrix_to_pgm_file(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	auto chan = source.channels();		// 1
 	if (chan != 1)
@@ -454,13 +451,12 @@ void save_matrix_to_pgm_file(cv::Mat& source, std::string filename)
 
 	cv::imwrite(filename, resultImage);
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "Saved pgm file: " << t << endl;
+	dump_duration(now, "Saved pgm file: ");
 }
 
 void save_matrix_to_float_file(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	auto chan = source.channels();		// 1
 	if (chan != 1)
@@ -509,13 +505,12 @@ void save_matrix_to_float_file(cv::Mat& source, std::string filename)
 		}
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved raw file: " << t << endl;
+	dump_duration(now, "saved raw file: ");
 }
 
 void save_matrix_to_format_file(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	auto chans = source.channels();		// 1
 	if (chans != 1)
@@ -565,28 +560,15 @@ void save_matrix_to_format_file(cv::Mat& source, std::string filename)
 	}
 	ofs << ss.str();
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved raw file: " << t << endl;
+	dump_duration(now, "saved raw file: ");
 }
 
 void save_matrix_to_binary_float(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
-	auto chans = source.channels();		// 1
-	if (chans != 1)
-	{
-		std::cout << "NOT saved! channels " << chans << std::endl;
-		return;
-	}
+	assert(source.type() == CV_32F);		// 32 bit
+	assert(source.channels() == 1);			// 1 chan
 
-	auto mType = source.type();
-	auto nRows = source.rows;
-	auto nCols = source.cols;
-	if (source.isContinuous())
-	{
-		nCols *= nRows;
-		nRows = 1;
-	}
+	auto now = cv::getTickCount();
 
 	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
 	if (!ofs.is_open())
@@ -595,42 +577,33 @@ void save_matrix_to_binary_float(cv::Mat& source, std::string filename)
 		return;
 	}
 
-	if (mType == CV_32F)
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
 	{
-		for (int row = 0; row < nRows; ++row)
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		auto sz = sizeof(float);
+		auto p = source.ptr<float>(row);
+		for (int col = 0; col < nCols; ++col)
 		{
-			auto sz = sizeof(float);
-			auto p = source.ptr<float>(row);
-			for (int col = 0; col < nCols; ++col)
-			{
-				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
-			}
+			ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
 		}
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved raw file: " << t << endl;
+	dump_duration(now, "save matrix to float file");
 }
 
 void save_matrix_to_binary_short(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	assert(source.type() == CV_16U);		// 16 bit
+	assert(source.channels() == 1);			// 1 chan
 
-	auto chans = source.channels();		// 1
-	if (chans != 1)
-	{
-		std::cout << "NOT saved! channels " << chans << std::endl;
-		return;
-	}
-
-	auto mType = source.type();
-	auto nRows = source.rows;
-	auto nCols = source.cols;
-	if (source.isContinuous())
-	{
-		nCols *= nRows;
-		nRows = 1;
-	}
+	auto now = cv::getTickCount();
 
 	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
 	if (!ofs.is_open())
@@ -639,26 +612,30 @@ void save_matrix_to_binary_short(cv::Mat& source, std::string filename)
 		return;
 	}
 
-	if (mType == CV_16U)
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
 	{
-		for (int row = 0; row < nRows; ++row)
+		nCols *= nRows;
+		nRows = 1;
+	}
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		auto sz = sizeof(unsigned short);
+		auto p = source.ptr<unsigned short>(row);
+		for (int col = 0; col < nCols; ++col)
 		{
-			auto sz = sizeof(unsigned short);
-			auto p = source.ptr<unsigned short>(row);
-			for (int col = 0; col < nCols; ++col)
-			{
-				ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
-			}
+			ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
 		}
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved raw file: " << t << endl;
+	dump_duration(now, "save matrix to ushort file");
 }
 
 void save_matrix_to_short_file(cv::Mat& source, std::string filename)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	auto chan = source.channels();		// 1
 	if (chan != 1)
@@ -707,8 +684,7 @@ void save_matrix_to_short_file(cv::Mat& source, std::string filename)
 		}
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "saved raw file: " << t << endl;
+	dump_duration(now, "saved raw file: ");
 }
 
 float calc_f_estimate(float fs, float fg)
@@ -761,7 +737,7 @@ void lineDftAbsolute(cv::Mat& source, cv::Mat& target)
 
 std::complex<float> calc_range_mean(const cv::Mat& row, int start, int length) 
 {
-	complex<float> result(0, 0);
+	std::complex<float> result(0, 0);
 	auto p = row.ptr<float>(0);
 	for (size_t i = start; i <= start + length * 2; i += 2)
 	{
@@ -773,7 +749,7 @@ std::complex<float> calc_range_mean(const cv::Mat& row, int start, int length)
 
 void lineDftFilter(cv::Mat& source, cv::Mat& target)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	float fs = 10.0;				// 10px/mm
 	float fg = 215 / 2.54 * 0.1;	// 215px/inch -> ~84,646px/cm -> ~8,4646px/mm
@@ -975,13 +951,12 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 		target.push_back(dft_row);
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "filter dft in seconds: " << t << endl;
+	dump_duration(now, "filter dft in seconds: ");
 }
 
-std::vector<unsigned short> readRawImage(const char* filename, bool swap = false)
+std::vector<unsigned short> read_content_from_file(const char* filename, bool swap = false)
 {
-	double t = (double)getTickCount();
+	auto now = cv::getTickCount();
 
 	std::ifstream fin(filename, std::ios::binary | std::ios::ate);
 	std::ifstream::pos_type pos = fin.tellg();
@@ -993,23 +968,20 @@ std::vector<unsigned short> readRawImage(const char* filename, bool swap = false
 	if (swap)
 	{
 		// swap byte order (intrin.h)
-		for (auto& item : result) {
-			item = _byteswap_ushort(item);
-		}
+		for (auto& item : result) { item = _byteswap_ushort(item); }
 	}
 
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	cout << "read raw endian: " << t << endl;
+	dump_duration(now, "read content from file");
 
 	return result;
 }
 
-void showImage(const char* label, Mat& image, cv::Size size = cv::Size()) 
+void showImage(const char* label, cv::Mat& image, cv::Size size = cv::Size()) 
 {
 	if (0 < size.height && 0 < size.width)
 	{
 		cv::Mat target;
-		cv::resize(image, target, size, 0, 0, INTER_AREA);
+		cv::resize(image, target, size, 0, 0, cv::INTER_AREA);
 		cv::imshow(label, target);
 	}
 	else
@@ -1039,45 +1011,44 @@ void showDFT(const char* label, cv::Mat& source, cv::Size size = cv::Size(), boo
 	showImage(label, dftMagnitude, size);
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char* argv[])
 {
+	if (argc != 5)
+	{
+		std::cerr << "Usage: " << argv[0] << " FileToImage.raw rows cols swap" << std::endl;
+		return 1;
+	}
+
 	cv::Size screen(600, 600);
-	unsigned short IMG_ROWS = 4320;
-	unsigned short IMG_COLS = 4318;
-	std::string inputName("c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw");
+	std::string inputName(argv[1]);	// "c:/Develop/DICOM/BilderDcm/Tisch3.dcm.raw"
+	unsigned short IMG_ROWS = std::stoi(argv[2]);	// 4320;
+	unsigned short IMG_COLS = std::stoi(argv[3]);	// 4318;
+	bool swap_file_option = std::stoi(argv[4]);		// 0
 
 	// read file to short array
-	auto data = readRawImage(inputName.c_str(), false);
+	auto data = read_content_from_file(inputName.c_str(), swap_file_option);
 
 	// load, show data matrix
 	cv::Mat shortImage (IMG_ROWS, IMG_COLS, CV_16U, &data[0]);
 	showImage("Short Data Image", shortImage, screen);
-
-	// write short matrix
-	//save_matrix_to_pgm_file(shortImage, inputName + "_short.pgm");
-	//save_matrix_to_short_file(shortImage, inputName + "_short.raw");
+	save_matrix_to_binary_short(shortImage, inputName + ".cpp.content.u16");
 
 	// convert matrix to float
 	cv::Mat floatImage;
 	shortImage.convertTo(floatImage, CV_32F, 1.0 / USHRT_MAX);
 	showImage("Float Data Image", floatImage, screen);
-
-	// write float matrix
-	//save_matrix_to_pgm_file(floatImage, inputName + "_float.pgm");
-	//save_matrix_to_short_file(floatImage, inputName + "_float.raw");
-	save_matrix_to_binary_short(floatImage, inputName + ".flt");
+	save_matrix_to_binary_float(floatImage, inputName + ".cpp.content.f32");
 
 	cv::Mat dftImage;
-	lineDftPerfom(floatImage, dftImage);
+	perform_dft_linewise(floatImage, dftImage);
 
 	cv::Mat magnitude;
 	format_matrix_to_magnitude(dftImage, magnitude);
-	//save_matrix_to_format_file(magnitude, inputName + "_magnitude.log");
+	save_matrix_to_binary_float(magnitude, inputName + ".cpp.magnitude.f32");
 
 	// save file to f32 
 	// save_magnitude_to_binary_file(magnitude, ".mag.original");
 	// save_magnitude_to_format_file(magnitude, ".mag.filtered");
-	save_matrix_to_binary_short(magnitude, inputName + "_magnitude.mag.original");
 	//save_matrix_to_binary_file(magnitude, inputName + "_magnitude.raw.filtered");
 	//save_matrix_to_short_file(magnitude, inputName + "_transform.raw");
 	//print_matrix_to_log_file(magnitude, inputName + "_transform.log");

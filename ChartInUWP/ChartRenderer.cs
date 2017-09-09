@@ -47,14 +47,15 @@ namespace ChartInUWP
 
       if (CurrentRow < _chartLoader.Rows)
       {
-        //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
-        //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
-        //var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
-        var values = _chartLoader.GetRow(CurrentRow);
-        var valuesMin = values.Min();
-        var valuesMax = values.Max();
+        var globalMin = _chartLoader.GlobalMinValue;
+        var globalMax = _chartLoader.GlobalMaxValue;
 
-        RenderData(sender, args, values.ToArray(), valuesMax, 1);
+        var values = _chartLoader.GetRow(CurrentRow);
+
+        var localMin = values.Min();
+        var localMax = values.Max();
+
+        RenderData(sender, args, values.ToArray(), localMax, 1);
       }
 
       RenderAxes(sender, args, 1, 1);

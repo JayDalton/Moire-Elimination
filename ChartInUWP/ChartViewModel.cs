@@ -13,7 +13,7 @@ namespace ChartInUWP
 
     private CanvasControl _canvasControl;
     private ChartRenderer _chart;
-    private ImageRenderer _imageRenderer;
+    private ImageRenderer _image;
 
     #endregion Fields
 
@@ -21,7 +21,7 @@ namespace ChartInUWP
     {
       _canvasControl = canvasControl;
       _chart = new ChartRenderer();
-      _imageRenderer = new ImageRenderer();
+      _image = new ImageRenderer();
     }
 
     #region Properties
@@ -100,7 +100,7 @@ namespace ChartInUWP
 
     public async Task LoadImageDataFile_Click()
     {
-      await _imageRenderer.LoadImageDataFromFile();
+      await _image.LoadImageDataFromFile();
     }
 
     #endregion Events
