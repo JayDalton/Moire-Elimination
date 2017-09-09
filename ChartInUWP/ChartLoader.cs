@@ -1,4 +1,6 @@
-﻿using MessagePack;
+﻿using Dicom;
+using Dicom.Imaging;
+using MessagePack;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
@@ -51,7 +54,45 @@ namespace ChartInUWP
       return _matrix.data.Skip(start).Take(length);
     }
 
-    public async Task LoadFromFileSelection()
+    public async Task LoadFromDicomFileAsync()
+    {
+      var picker = new FileOpenPicker();
+      picker.FileTypeFilter.Add(".dcm");
+      picker.FileTypeFilter.Add(".dic");
+
+      StorageFile file = await picker.PickSingleFileAsync();
+      if (file != null)
+      {
+        try
+        {
+          var stream = await file.OpenStreamForReadAsync();
+          var fdicom = await DicomFile.OpenAsync(stream);
+          if (fdicom.Dataset.Contains(DicomTag.PixelData))
+          {
+            var dicomImage = new DicomImage(fdicom.Dataset);
+            var frames = Enumerable
+              .Range(0, dicomImage.NumberOfFrames)
+              .Select(frame => dicomImage.RenderImage(frame).As<ImageSource>())
+            ;
+          }
+
+          GlobalMaxValue = _matrix.data.Max();
+          GlobalMinValue = _matrix.data.Min();
+        }
+        catch (Exception ex)
+        {
+          Debug.WriteLine(ex.Message);
+          throw;
+        }
+      }
+    }
+
+    public async Task LoadFromPlainFileAsync()
+    {
+      await Task.Delay(1000);
+    }
+
+    public async Task LoadFromPackedFileAsync()
     {
       var picker = new FileOpenPicker();
       picker.ViewMode = PickerViewMode.List;

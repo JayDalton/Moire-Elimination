@@ -36,9 +36,14 @@ namespace ChartInUWP
 
     #region Methods
 
-    public async Task LoadChartDataFromFile()
+    public async Task LoadChartDataFromPackedFileAsync()
     {
-      await _chartLoader.LoadFromFileSelection();
+      await _chartLoader.LoadFromPackedFileAsync();
+    }
+
+    public async Task LoadChartDataFromDicomFileAsync()
+    {
+      await _chartLoader.LoadFromDicomFileAsync();
     }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)

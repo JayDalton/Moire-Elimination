@@ -92,15 +92,16 @@ namespace ChartInUWP
       _chart.OnDrawGraph(sender, args);
     }
 
-    public async Task LoadChartDataFile_Click()
+    public async Task LoadPackedDataFile_Click()
     {
-      await _chart.LoadChartDataFromFile();
+      await _chart.LoadChartDataFromPackedFileAsync();
       _canvasControl.Invalidate();
     }
 
-    public async Task LoadImageDataFile_Click()
+    public async Task LoadDicomDataFile_Click()
     {
-      await _image.LoadImageDataFromFile();
+      await _chart.LoadChartDataFromDicomFileAsync();
+      _canvasControl.Invalidate();
     }
 
     #endregion Events
