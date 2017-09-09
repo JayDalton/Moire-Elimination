@@ -1,20 +1,5 @@
-﻿using MessagePack;
-using Microsoft.Graphics.Canvas.UI.Xaml;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
+﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Threading.Tasks;
-using Windows.Graphics.Imaging;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.Storage.Streams;
-using Windows.UI;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media.Imaging;
 
 namespace ChartInUWP
 {
@@ -27,7 +12,7 @@ namespace ChartInUWP
     private ChartService _chartService;
 
     private CanvasControl _canvasControl;
-    private ChartRenderer _chartRenderer;
+    private ChartRenderer _chart;
     private ImageRenderer _imageRenderer;
 
     #endregion Fields
@@ -35,7 +20,7 @@ namespace ChartInUWP
     public ChartViewModel(CanvasControl canvasControl)
     {
       _canvasControl = canvasControl;
-      _chartRenderer = new ChartRenderer();
+      _chart = new ChartRenderer();
       _imageRenderer = new ImageRenderer();
     }
 
@@ -48,7 +33,7 @@ namespace ChartInUWP
     }
 
     double _chartScaleRow = default(double);
-    public double ChartScaleRow
+    public double ChartScaleRowSlider
     {
       get { return _chartScaleRow; }
       set
@@ -61,7 +46,7 @@ namespace ChartInUWP
     }
 
     double _chartScaleCol = default(double);
-    public double ChartScaleCol
+    public double ChartScaleColSlider
     {
       get { return _chartScaleCol; }
       set
@@ -73,13 +58,12 @@ namespace ChartInUWP
       }
     }
 
-    private double _chartMoveRow = default(double);
-    public double ChartMoveRow
+    public double ChartMoveRowSlider
     {
-      get { return _chartMoveRow; }
+      get { return _chart.CurrentRow; }
       set
       {
-        if (SetProperty(ref _chartMoveRow, value))
+        if (SetProperty(_chart.CurrentRow, value, () => _chart.CurrentRow = (int)value))
         {
           _canvasControl.Invalidate();
         }
@@ -87,7 +71,7 @@ namespace ChartInUWP
     }
 
     private double _chartMoveCol = default(double);
-    public double ChartMoveCol
+    public double ChartMoveColSlider
     {
       get { return _chartMoveCol; }
       set
@@ -105,12 +89,13 @@ namespace ChartInUWP
 
     public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
     {
-      var x = 0;
+      _chart.OnDrawGraph(sender, args);
     }
 
     public async Task LoadChartDataFile_Click()
     {
-      await _chartRenderer.LoadChartDataFromFile();
+      await _chart.LoadChartDataFromFile();
+      _canvasControl.Invalidate();
     }
 
     public async Task LoadImageDataFile_Click()

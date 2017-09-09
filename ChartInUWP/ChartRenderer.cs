@@ -16,7 +16,10 @@ namespace ChartInUWP
   {
     #region Fields
 
+    private bool renderArea = false;
     private ChartLoader _chartLoader;
+    private float DataStrokeThickness = 1;
+    private Color DataStrokeColor = Colors.Black;
 
     #endregion Fields
 
@@ -26,6 +29,8 @@ namespace ChartInUWP
     }
 
     #region Properties
+
+    public int CurrentRow { get; set; }
 
     #endregion Properties
 
@@ -39,44 +44,47 @@ namespace ChartInUWP
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
       args.DrawingSession.Clear(Colors.White);
-      //if (_data.ContainsKey((int)GraphMoveY.Value))
-      //{
-      //  //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
-      //  //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
-      //  var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
-      //  _chartRenderer.RenderData(
-      //    GraphCanvas, args, Colors.Black, DataStrokeThickness,
-      //    values, false, GraphScaleY.Value, GraphScaleX.Value
-      //    );
-      //}
-      //_chartRenderer.RenderAxes(GraphCanvas, args, GraphScaleY.Value, GraphScaleX.Value);
+
+      if (CurrentRow < _chartLoader.Rows)
+      {
+        //int index = Math.Min(MovingHorizontalValue, _data[MovingVerticalValue].Count - 1);
+        //int count = Math.Min((int)sender.ActualWidth, _data[MovingVerticalValue].Count - 1 - index);
+        //var values = _data[(int)GraphMoveY.Value]/*.GetRange(index, count)*/;
+        var values = _chartLoader.GetRow(CurrentRow);
+        var valuesMin = values.Min();
+        var valuesMax = values.Max();
+
+        RenderData(sender, args, values.ToArray(), valuesMax, 1);
+      }
+
+      RenderAxes(sender, args, 1, 1);
     }
 
-    private void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, List<double> data, bool renderArea, double maxY, double scaleX)
+    private void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, float[] values, double maxY, double scaleX)
     {
-      if (data.Count == 0) return;
+      if (values.Length == 0) return;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
         cpb.BeginFigure(
           new Vector2(0,
-            (float)(/*canvas.ActualHeight - */data[0] * canvas.ActualHeight / maxY)
+            (float)(/*canvas.ActualHeight - */values[0] * canvas.ActualHeight / maxY)
           )
         );
 
-        for (int i = 1; i < data.Count; i++)
+        for (int i = 1; i < values.Length; i++)
         {
           cpb.AddLine(
             new Vector2(
               i * (float)scaleX,
-              (float)(/*canvas.ActualHeight - */data[i] * canvas.ActualHeight / maxY)
+              (float)(/*canvas.ActualHeight - */values[i] * canvas.ActualHeight / maxY)
             )
           );
         }
 
         if (renderArea)
         {
-          cpb.AddLine(new Vector2(data.Count, (float)canvas.ActualHeight));
+          cpb.AddLine(new Vector2(values.Count(), (float)canvas.ActualHeight));
           cpb.AddLine(new Vector2(0, (float)canvas.ActualHeight));
           cpb.EndFigure(CanvasFigureLoop.Closed);
           args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), Colors.LightGreen);
@@ -84,12 +92,12 @@ namespace ChartInUWP
         else
         {
           cpb.EndFigure(CanvasFigureLoop.Open);
-          args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), color, thickness);
+          args.DrawingSession.DrawGeometry(CanvasGeometry.CreatePath(cpb), DataStrokeColor, DataStrokeThickness);
         }
       }
     }
 
-    public void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY, double scaleX, int count = 4320)
+    private void RenderAxes(CanvasControl canvas, CanvasDrawEventArgs args, double maxY, double scaleX, int count = 4320)
     {
       var width = (float)canvas.ActualWidth;
       var height = (float)(canvas.ActualHeight);
@@ -151,7 +159,7 @@ namespace ChartInUWP
       //args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
     }
 
-    public void RenderAveragesAsColumns(CanvasControl canvas, CanvasDrawEventArgs args, int columnAvgDataRange, float columnWidth, List<double> data)
+    private void RenderAveragesAsColumns(CanvasControl canvas, CanvasDrawEventArgs args, int columnAvgDataRange, float columnWidth, List<double> data)
     {
       var padding = .5 * (columnAvgDataRange - columnWidth);
       for (int start = 0; start < data.Count; start += columnAvgDataRange)
@@ -173,7 +181,7 @@ namespace ChartInUWP
       }
     }
 
-    public void RenderAveragesAsPieChart(CanvasControl canvas, CanvasDrawEventArgs args, List<double> pieValues, List<Color> palette)
+    private void RenderAveragesAsPieChart(CanvasControl canvas, CanvasDrawEventArgs args, List<double> pieValues, List<Color> palette)
     {
       var total = pieValues.Sum();
 
@@ -247,7 +255,7 @@ namespace ChartInUWP
       }
     }
 
-    public void RenderMovingAverage(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, int movingAverageRange, List<double> data)
+    private void RenderMovingAverage(CanvasControl canvas, CanvasDrawEventArgs args, Color color, float thickness, int movingAverageRange, List<double> data)
     {
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {

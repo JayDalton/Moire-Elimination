@@ -17,14 +17,10 @@ namespace ChartInUWP
     #region Fields
 
     private ChartMatrix _matrix;
-    private float[][] _chart;
 
     #endregion Fields
 
-    public ChartLoader()
-    {
-
-    }
+    public ChartLoader() {}
 
     #region Properties
 
@@ -78,7 +74,6 @@ namespace ChartInUWP
           Debug.WriteLine(ex.Message);
           throw;
         }
-
       }
     }
 

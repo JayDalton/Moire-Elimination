@@ -67,7 +67,7 @@
 
             <Slider 
                 x:Name="GraphScaleX" 
-                Value="{x:Bind viewModel.ChartScaleCol, Mode=TwoWay}"
+                Value="{x:Bind viewModel.ChartScaleColSlider, Mode=TwoWay}"
                 Grid.Row="0" Grid.Column="1" Header="Scale X" 
                 Maximum="10.0" Minimum="1.0" Margin="10, 0"/>
             
@@ -89,7 +89,7 @@
 
             <Slider 
                 x:Name="GraphMoveX" 
-                Value="{x:Bind viewModel.ChartMoveCol, Mode=TwoWay}"
+                Value="{x:Bind viewModel.ChartMoveColSlider, Mode=TwoWay}"
                 Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"/>
 
             <!--<Button 
@@ -123,7 +123,7 @@
             <Slider 
                 x:Name="GraphScaleY"  Header="Scale"
                 Grid.Row="1" Grid.Column="0" Margin="0, 10"
-                Value="{x:Bind viewModel.ChartScaleRow, Mode=TwoWay}"
+                Value="{x:Bind viewModel.ChartScaleRowSlider, Mode=TwoWay}"
                 Orientation="Vertical" IsDirectionReversed="True"/>
 
             <!--<Button 
@@ -145,7 +145,7 @@
             <Slider 
                 x:Name="GraphMoveY" Header="Move"  
                 Grid.Row="1" Grid.Column="1" Margin="0, 10"
-                Value="{x:Bind viewModel.ChartMoveRow, Mode=TwoWay}"
+                Value="{x:Bind viewModel.ChartMoveRowSlider, Mode=TwoWay}"
                 Orientation="Vertical" IsDirectionReversed="True"/>
 
             <!--<Button 

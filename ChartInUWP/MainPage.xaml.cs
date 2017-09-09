@@ -42,7 +42,6 @@ namespace ChartInUWP
   public sealed partial class MainPage : Page
   {
     private ChartViewModel viewModel;
-    private const float DataStrokeThickness = 1;
 
     public MainPage()
     {
