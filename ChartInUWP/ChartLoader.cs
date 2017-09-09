@@ -16,6 +16,7 @@ namespace ChartInUWP
   {
     #region Fields
 
+    private ChartMatrix _matrix;
     private float[][] _chart;
 
     #endregion Fields
@@ -27,13 +28,34 @@ namespace ChartInUWP
 
     #region Properties
 
-    public float[][] ChartData { get; set; }
+    public uint Rows => _matrix.rows;
+
+    public uint Cols => _matrix.cols;
+
+    public float GlobalMaxValue { get; private set; }
+
+    public float GlobalMinValue { get; private set; }
 
     #endregion Properties
 
     #region Methods
 
-    public async Task LoadFileSelection()
+    // GetRow(0)
+    public IEnumerable<float> GetRow(int row)
+    {
+      var start = row < _matrix.rows ? row * _matrix.cols : 0;
+      return _matrix.data.Skip(start).Take(_matrix.cols);
+    }
+
+    // GetRow(2, 20, 15)
+    public IEnumerable<float> GetRowRange(int row, int col = 0, int len = 0)
+    {
+      var start = row < _matrix.rows ? row * _matrix.cols : 0;
+      var length = len < _matrix.cols ? len : 0;
+      return _matrix.data.Skip(start).Take(length);
+    }
+
+    public async Task LoadFromFileSelection()
     {
       var picker = new FileOpenPicker();
       picker.ViewMode = PickerViewMode.List;
@@ -45,55 +67,11 @@ namespace ChartInUWP
       {
         try
         {
-          //_data.Clear();
-          var maxInputValue = double.MinValue;
-          var minInputValue = double.MaxValue;
-
-          //const int WIDTH = 4320;
-          //const int HEIGHT = 4320;
-
           var content = await FileIO.ReadBufferAsync(file);
+          _matrix = MessagePackSerializer.Deserialize<ChartMatrix>(content.AsStream());
 
-          //var mtx = new Matrix
-          //{
-          //  rows = 3,
-          //  cols = 2,
-          //  data = new float[] { 1, 2, 3 }
-          //};
-
-          //var serial = MessagePackSerializer.Serialize<Matrix>(mtx);
-          //var matrix = MessagePackSerializer.Deserialize<Matrix>(serial);
-          //var a = matrix.cols;
-          //var b = matrix.rows;
-          //var c = matrix.data;
-
-          var matrix = MessagePackSerializer.Deserialize<Matrix>(content.AsStream());
-          var cols = matrix.cols;
-          var rows = matrix.rows;
-          var data = matrix.data;
-
-          if (data.Length != matrix.cols * matrix.rows)
-          {
-            return;
-          }
-
-
-
-          using (var reader = new BinaryReader(content.AsStream()))
-          {
-            //for (int row = 0; row < HEIGHT; ++row)
-            //{
-            //  var values = new List<double>();
-            //  for (int col = 0; col < WIDTH; ++col)
-            //  {
-            //    values.Add(reader.ReadSingle());
-            //  }
-            //  maxInputValue = Math.Max(maxInputValue, values.Max());
-            //  minInputValue = Math.Min(minInputValue, values.Min());
-            //  //_data.Add(row, values);
-            //}
-          }
-
+          GlobalMaxValue = _matrix.data.Max();
+          GlobalMinValue = _matrix.data.Min();
         }
         catch (Exception ex)
         {

@@ -9,11 +9,14 @@ namespace ChartInUWP
   public class ImageRenderer
   {
     #region Fields
+
+    private ImageLoader _imageLoader;
+
     #endregion Fields
 
     public ImageRenderer()
     {
-
+      _imageLoader = new ImageLoader();
     }
 
     #region Properties
@@ -24,9 +27,9 @@ namespace ChartInUWP
 
     #region Methods
 
-    public async Task LoadImageSelection()
+    public async Task LoadImageDataFromFile()
     {
-      throw new NotImplementedException();
+      await _imageLoader.LoadImageSelection();
     }
 
     #endregion Methods

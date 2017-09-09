@@ -16,11 +16,13 @@ namespace ChartInUWP
   {
     #region Fields
 
+    private ChartLoader _chartLoader;
+
     #endregion Fields
 
     public ChartRenderer()
     {
-
+      _chartLoader = new ChartLoader();
     }
 
     #region Properties
@@ -28,6 +30,11 @@ namespace ChartInUWP
     #endregion Properties
 
     #region Methods
+
+    public async Task LoadChartDataFromFile()
+    {
+      await _chartLoader.LoadFromFileSelection();
+    }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
@@ -142,11 +149,6 @@ namespace ChartInUWP
 
       //args.DrawingSession.DrawText("0", midWidth + 5, height - 30, Colors.Gray);
       //args.DrawingSession.DrawText(maxY.ToString(), midWidth + 5, 5, Colors.Gray);
-    }
-
-    internal Task LoadChartDataFromFile()
-    {
-      throw new NotImplementedException();
     }
 
     public void RenderAveragesAsColumns(CanvasControl canvas, CanvasDrawEventArgs args, int columnAvgDataRange, float columnWidth, List<double> data)
