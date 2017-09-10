@@ -1,5 +1,6 @@
 ﻿using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Threading.Tasks;
+using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
@@ -8,6 +9,7 @@ namespace ChartInUWP
     #region Fields
 
     private bool progressing = false;
+    private ImageSource _imageSource;
 
     private ChartService _chartService;
 
@@ -30,6 +32,26 @@ namespace ChartInUWP
     {
       get { return progressing; }
       set { SetProperty(ref progressing, value); }
+    }
+
+    public ImageSource ImageSource
+    {
+      get { return _imageSource; }
+      set { SetProperty(ref _imageSource, value); }
+    }
+
+    private bool _isImageVisible;
+    public bool IsImageVisible
+    {
+      get { return _isImageVisible; }
+      set { SetProperty(ref _isImageVisible, value); }
+    }
+
+    private bool _isChartVisible;
+    public bool IsChartVisible
+    {
+      get { return _isChartVisible; }
+      set { SetProperty(ref _isChartVisible, value); }
     }
 
     double _chartScaleRow = default(double);
@@ -92,17 +114,28 @@ namespace ChartInUWP
       _chart.OnDrawGraph(sender, args);
     }
 
+    public async Task LoadDicomFile_Click()
+    {
+      await _chart.LoadDicomFileAsync();
+      ImageSource = _chart.ImageSource;
+      IsChartVisible = false;
+      IsImageVisible = true;
+    }
+
+    public async Task LoadChartData_Click()
+    {
+      await _chart.LoadChartDataFromDicomFileAsync();
+      _canvasControl.Invalidate();
+      IsImageVisible = false;
+      IsChartVisible = true;
+    }
+
     public async Task LoadPackedDataFile_Click()
     {
       await _chart.LoadChartDataFromPackedFileAsync();
       _canvasControl.Invalidate();
     }
 
-    public async Task LoadDicomDataFile_Click()
-    {
-      await _chart.LoadChartDataFromDicomFileAsync();
-      _canvasControl.Invalidate();
-    }
 
     #endregion Events
 

@@ -17,7 +17,6 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
 
         <!--<ScrollViewer PointerWheelChanged="ScrollViewer_PointerWheelChanged"
             Grid.Row="0" ZoomMode="Enabled"
@@ -26,9 +25,12 @@
             HorizontalScrollMode="Enabled"
             VerticalScrollMode="Enabled">
         </ScrollViewer>-->
+        <Image 
+            Grid.Row="0" Grid.Column="0" Visibility="{x:Bind viewModel.IsImageVisible, Mode=OneWay}"
+            Source="{x:Bind viewModel.ImageSource, Mode=OneWay}" Stretch="Uniform"/>
         <canvas:CanvasControl 
             x:Name="GraphCanvas" 
-            Grid.Row="0" Grid.Column="0"
+            Grid.Row="0" Grid.Column="0" Visibility="{x:Bind viewModel.IsChartVisible, Mode=OneWay}"
             Draw="{x:Bind viewModel.RenderChartCanvas, Mode=OneWay}" Margin="5"/>
 
         <Grid x:Name="GreyImageGrid">
@@ -163,12 +165,12 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Button 
-                Grid.Row="0" Content="Load Packed" Background="OrangeRed"
-                Click="{x:Bind viewModel.LoadPackedDataFile_Click}" 
+                Grid.Row="0" Content="Load Dicom" Background="OrangeRed"
+                Click="{x:Bind viewModel.LoadDicomFile_Click}" 
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             <Button 
-                Grid.Row="1" Content="Load Dicom" Background="OrangeRed"
-                Click="{x:Bind viewModel.LoadDicomDataFile_Click}" 
+                Grid.Row="1" Content="Load Chart" Background="OrangeRed"
+                Click="{x:Bind viewModel.LoadChartData_Click}" 
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
     </Grid>

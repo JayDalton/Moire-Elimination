@@ -1,5 +1,6 @@
 ﻿using Dicom;
 using Dicom.Imaging;
+using Dicom.Imaging.Render;
 using MessagePack;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
@@ -20,6 +22,8 @@ namespace ChartInUWP
     #region Fields
 
     private ChartMatrix _matrix;
+    private DicomFile _dicomFile;
+    //private ImageSource _imageSource;
 
     #endregion Fields
 
@@ -34,6 +38,8 @@ namespace ChartInUWP
     public float GlobalMaxValue { get; private set; }
 
     public float GlobalMinValue { get; private set; }
+
+    public ImageSource ImageSource { get; private set; }
 
     #endregion Properties
 
@@ -66,18 +72,27 @@ namespace ChartInUWP
         try
         {
           var stream = await file.OpenStreamForReadAsync();
-          var fdicom = await DicomFile.OpenAsync(stream);
-          if (fdicom.Dataset.Contains(DicomTag.PixelData))
+          _dicomFile = await DicomFile.OpenAsync(stream);
+          if (_dicomFile.Dataset.Contains(DicomTag.PixelData))
           {
-            var dicomImage = new DicomImage(fdicom.Dataset);
-            var frames = Enumerable
-              .Range(0, dicomImage.NumberOfFrames)
-              .Select(frame => dicomImage.RenderImage(frame).As<ImageSource>())
-            ;
+            var dicomImage = new DicomImage(_dicomFile.Dataset);
+            ImageSource = dicomImage.RenderImage().As<ImageSource>();
+            var header = DicomPixelData.Create(_dicomFile.Dataset);
+            var pixelData = PixelDataFactory.Create(header, 0);
+            if (pixelData is GrayscalePixelDataU16)
+            {
+              ushort[] pixels = (pixelData as GrayscalePixelDataU16).Data;
+              float[] values = pixels.Select(Convert.ToSingle).ToArray();
+              GlobalMaxValue = values.Max();
+              GlobalMinValue = values.Min();
+              _matrix = new ChartMatrix
+              {
+                rows = header.Height,
+                cols = header.Width,
+                data = values
+              };
+            }
           }
-
-          GlobalMaxValue = _matrix.data.Max();
-          GlobalMinValue = _matrix.data.Min();
         }
         catch (Exception ex)
         {

@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.UI;
+using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
@@ -32,18 +33,25 @@ namespace ChartInUWP
 
     public int CurrentRow { get; set; }
 
+    public ImageSource ImageSource => _chartLoader.ImageSource;
+
     #endregion Properties
 
     #region Methods
 
-    public async Task LoadChartDataFromPackedFileAsync()
+    public async Task LoadDicomFileAsync()
     {
-      await _chartLoader.LoadFromPackedFileAsync();
+      await _chartLoader.LoadFromDicomFileAsync();
     }
 
     public async Task LoadChartDataFromDicomFileAsync()
     {
-      await _chartLoader.LoadFromDicomFileAsync();
+      await Task.Delay(1000);
+    }
+
+    public async Task LoadChartDataFromPackedFileAsync()
+    {
+      await _chartLoader.LoadFromPackedFileAsync();
     }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
