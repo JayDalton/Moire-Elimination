@@ -60,48 +60,6 @@ namespace ChartInUWP
       return _matrix.data.Skip(start).Take(length);
     }
 
-    public async Task LoadFromDicomFileAsync()
-    {
-      var picker = new FileOpenPicker();
-      picker.FileTypeFilter.Add(".dcm");
-      picker.FileTypeFilter.Add(".dic");
-
-      StorageFile file = await picker.PickSingleFileAsync();
-      if (file != null)
-      {
-        try
-        {
-          var stream = await file.OpenStreamForReadAsync();
-          _dicomFile = await DicomFile.OpenAsync(stream);
-          if (_dicomFile.Dataset.Contains(DicomTag.PixelData))
-          {
-            var dicomImage = new DicomImage(_dicomFile.Dataset);
-            ImageSource = dicomImage.RenderImage().As<ImageSource>();
-            var header = DicomPixelData.Create(_dicomFile.Dataset);
-            var pixelData = PixelDataFactory.Create(header, 0);
-            if (pixelData is GrayscalePixelDataU16)
-            {
-              ushort[] pixels = (pixelData as GrayscalePixelDataU16).Data;
-              float[] values = pixels.Select(Convert.ToSingle).ToArray();
-              GlobalMaxValue = values.Max();
-              GlobalMinValue = values.Min();
-              _matrix = new ChartMatrix
-              {
-                rows = header.Height,
-                cols = header.Width,
-                data = values
-              };
-            }
-          }
-        }
-        catch (Exception ex)
-        {
-          Debug.WriteLine(ex.Message);
-          throw;
-        }
-      }
-    }
-
     public async Task LoadFromPlainFileAsync()
     {
       await Task.Delay(1000);

@@ -1,4 +1,5 @@
-﻿using Microsoft.Graphics.Canvas.UI.Xaml;
+﻿using MathNet.Numerics;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Media;
 
@@ -122,20 +123,18 @@ namespace ChartInUWP
       IsImageVisible = true;
     }
 
-    public async Task LoadChartData_Click()
+    //public async Task LoadPackedFile_Click()
+    //{
+    //  await _chart.LoadPackedFileAsync();
+    //  _canvasControl.Invalidate();
+    //}
+
+    public void LoadChartData_Click()
     {
-      await _chart.LoadChartDataFromDicomFileAsync();
       _canvasControl.Invalidate();
       IsImageVisible = false;
       IsChartVisible = true;
     }
-
-    public async Task LoadPackedDataFile_Click()
-    {
-      await _chart.LoadChartDataFromPackedFileAsync();
-      _canvasControl.Invalidate();
-    }
-
 
     #endregion Events
 

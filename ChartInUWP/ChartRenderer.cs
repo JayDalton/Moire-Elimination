@@ -18,22 +18,21 @@ namespace ChartInUWP
     #region Fields
 
     private bool renderArea = false;
-    private ChartLoader _chartLoader;
     private float DataStrokeThickness = 1;
     private Color DataStrokeColor = Colors.Black;
+    private DicomLoader _dicomLoader = new DicomLoader();
 
     #endregion Fields
 
     public ChartRenderer()
     {
-      _chartLoader = new ChartLoader();
     }
 
     #region Properties
 
     public int CurrentRow { get; set; }
 
-    public ImageSource ImageSource => _chartLoader.ImageSource;
+    public ImageSource ImageSource => _dicomLoader.ImageSource;
 
     #endregion Properties
 
@@ -41,65 +40,60 @@ namespace ChartInUWP
 
     public async Task LoadDicomFileAsync()
     {
-      await _chartLoader.LoadFromDicomFileAsync();
+      await _dicomLoader.LoadFromDicomFileAsync();
     }
 
-    public async Task LoadChartDataFromDicomFileAsync()
+    //public async Task LoadPackedFileAsync()
+    //{
+    //  await _chartLoader.LoadFromPackedFileAsync();
+    //}
+
+    public async Task LoadChartDataAsync()
     {
       await Task.Delay(1000);
-    }
-
-    public async Task LoadChartDataFromPackedFileAsync()
-    {
-      await _chartLoader.LoadFromPackedFileAsync();
     }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
     {
       args.DrawingSession.Clear(Colors.White);
 
-      if (CurrentRow < _chartLoader.Rows)
+      if (CurrentRow < _dicomLoader.Rows)
       {
-        var globalMin = _chartLoader.GlobalMinValue;
-        var globalMax = _chartLoader.GlobalMaxValue;
+        var globalMin = _dicomLoader.GlobalMinValue;
+        var globalMax = _dicomLoader.GlobalMaxValue;
 
-        var values = _chartLoader.GetRow(CurrentRow);
+        var values = _dicomLoader.GetRow(CurrentRow);
 
-        var localMin = values.Min();
-        var localMax = values.Max();
-
-        RenderData(sender, args, values.ToArray(), localMax, 1);
+        RenderData(sender, args, values.ToArray());
       }
 
       RenderAxes(sender, args, 1, 1);
     }
 
-    private void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, float[] values, double maxY, double scaleX)
+    private void RenderData(CanvasControl canvas, CanvasDrawEventArgs args, float[] values)
     {
       if (values.Length == 0) return;
+      var canvasWidth = (float)canvas.ActualWidth;
+      var canvasHeight = (float)canvas.ActualHeight;
+      var localMin = values.Min();
+      var localMax = values.Max();
+      var scaleX = canvasWidth / values.Length;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
-        cpb.BeginFigure(
-          new Vector2(0,
-            (float)(/*canvas.ActualHeight - */values[0] * canvas.ActualHeight / maxY)
-          )
-        );
+        // first value
+        cpb.BeginFigure(new Vector2(0, (/*canvas.ActualHeight - */values[0] * canvasHeight / localMax)));
 
+        // values
         for (int i = 1; i < values.Length; i++)
         {
-          cpb.AddLine(
-            new Vector2(
-              i * (float)scaleX,
-              (float)(/*canvas.ActualHeight - */values[i] * canvas.ActualHeight / maxY)
-            )
-          );
+          cpb.AddLine(new Vector2(i * scaleX, (/*canvas.ActualHeight - */values[i] * canvasHeight / localMax)));
         }
 
         if (renderArea)
         {
-          cpb.AddLine(new Vector2(values.Count(), (float)canvas.ActualHeight));
-          cpb.AddLine(new Vector2(0, (float)canvas.ActualHeight));
+          cpb.AddLine(new Vector2(values.Count(), canvasHeight));
+          cpb.AddLine(new Vector2(0, canvasHeight));
           cpb.EndFigure(CanvasFigureLoop.Closed);
           args.DrawingSession.FillGeometry(CanvasGeometry.CreatePath(cpb), Colors.LightGreen);
         }

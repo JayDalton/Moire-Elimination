@@ -10,13 +10,13 @@ namespace ChartInUWP
   {
     #region Fields
 
-    private ImageLoader _imageLoader;
+    private DicomLoader _imageLoader;
 
     #endregion Fields
 
     public ImageRenderer()
     {
-      _imageLoader = new ImageLoader();
+      _imageLoader = new DicomLoader();
     }
 
     #region Properties
@@ -29,7 +29,7 @@ namespace ChartInUWP
 
     public async Task LoadImageDataFromFile()
     {
-      await _imageLoader.LoadImageSelection();
+      //await _imageLoader.LoadImageSelection();
     }
 
     #endregion Methods

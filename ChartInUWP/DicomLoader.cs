@@ -1,22 +1,43 @@
-﻿using System;
+﻿using Dicom;
+using Dicom.Imaging;
+using Dicom.Imaging.Render;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ImageLoader
+  public class DicomLoader
   {
     #region Fields
+
+    private DicomFile _dicomFile;
+    
     #endregion Fields
 
-    public ImageLoader()
-    {
-
-    }
+    public DicomLoader() {}
 
     #region Properties
+
+    public ushort Rows { get; private set; }
+
+    public ushort Cols { get; private set; }
+
+    public float GlobalMaxValue { get; private set; }
+
+    public float GlobalMinValue { get; private set; }
+
+    public ImageSource ImageSource { get; private set; }
+
+    public IEnumerable<float> Values { get; private set; }
+
     #endregion Properties
 
     #region Events
@@ -24,10 +45,61 @@ namespace ChartInUWP
 
     #region Methods
 
-    public async Task LoadImageSelection()
+    // GetRow(0)
+    public IEnumerable<float> GetRow(int row)
     {
-      throw new NotImplementedException();
+      var start = row < Rows ? row * Cols : 0;
+      return Values.Skip(start).Take(Cols);
     }
+
+    // GetRow(2, 20, 15)
+    public IEnumerable<float> GetRowRange(int row, int col = 0, int len = 0)
+    {
+      var start = row < Rows ? row * Cols : 0;
+      var length = len < Cols ? len : 0;
+      return Values.Skip(start).Take(length);
+    }
+
+    public async Task LoadFromDicomFileAsync()
+    {
+      var picker = new FileOpenPicker();
+      picker.FileTypeFilter.Add(".dcm");
+      picker.FileTypeFilter.Add(".dic");
+
+      StorageFile file = await picker.PickSingleFileAsync();
+      if (file != null)
+      {
+        try
+        {
+          var stream = await file.OpenStreamForReadAsync();
+          _dicomFile = await DicomFile.OpenAsync(stream);
+          if (_dicomFile.Dataset.Contains(DicomTag.PixelData))
+          {
+            var dicomImage = new DicomImage(_dicomFile.Dataset);
+            ImageSource = dicomImage.RenderImage().As<ImageSource>();
+            var header = DicomPixelData.Create(_dicomFile.Dataset);
+            Rows = header.Height;
+            Cols = header.Width;
+            var pixelData = PixelDataFactory.Create(header, 0);
+            if (pixelData is GrayscalePixelDataU16)
+            {
+              Values = (pixelData as GrayscalePixelDataU16).Data
+                .Select(Convert.ToSingle)
+                .Select(v => v * (1.0f / ushort.MaxValue))
+                .ToArray();
+              GlobalMaxValue = Values.Max();
+              GlobalMinValue = Values.Min();
+            }
+          }
+        }
+        catch (Exception ex)
+        {
+          Debug.WriteLine(ex.Message);
+          throw;
+        }
+      }
+    }
+
 
     // reverse byte order (16-bit)
     public static UInt16 ReverseBytes(UInt16 value)
