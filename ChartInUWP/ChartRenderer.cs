@@ -77,17 +77,20 @@ namespace ChartInUWP
       var canvasHeight = (float)canvas.ActualHeight;
       var localMin = values.Min();
       var localMax = values.Max();
+      var scaleY = canvasWidth / localMax;
       var scaleX = canvasWidth / values.Length;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))
       {
         // first value
-        cpb.BeginFigure(new Vector2(0, (/*canvas.ActualHeight - */values[0] * canvasHeight / localMax)));
+        //cpb.BeginFigure(new Vector2(0, (canvasHeight - values[0] * canvasHeight / localMax)));
+        cpb.BeginFigure(new Vector2(0, values[0] * scaleY));
 
         // values
         for (int i = 1; i < values.Length; i++)
         {
-          cpb.AddLine(new Vector2(i * scaleX, (/*canvas.ActualHeight - */values[i] * canvasHeight / localMax)));
+          //cpb.AddLine(new Vector2(i * scaleX, (canvasHeight - values[i] * canvasHeight / localMax)));
+          cpb.AddLine(new Vector2(i * scaleX, values[i] * scaleY));
         }
 
         if (renderArea)

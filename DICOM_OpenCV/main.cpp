@@ -563,9 +563,44 @@ void save_matrix_to_format_file(cv::Mat& source, std::string filename)
 	dump_duration(now, "saved raw file: ");
 }
 
+void save_fourier_to_binary_float(cv::Mat& source, std::string filename) 
+{
+	assert(source.depth() == CV_32F);		// 32 bit
+	assert(source.channels() == 2);			// 2 chan
+
+	auto now = cv::getTickCount();
+
+	std::ofstream ofs(filename, std::ofstream::binary | std::ofstream::out);
+	if (!ofs.is_open())
+	{
+		std::cout << "Can not open image file: " << filename << std::endl;
+		return;
+	}
+
+	auto nRows = source.rows;
+	auto nCols = source.cols;
+	if (source.isContinuous())
+	{
+		nCols *= nRows * source.channels();
+		nRows = 1;
+	}
+
+	for (int row = 0; row < nRows; ++row)
+	{
+		auto sz = sizeof(float);
+		auto p = source.ptr<float>(row);
+		for (int col = 0; col < nCols; ++col)
+		{
+			ofs.write(reinterpret_cast<const char*>(&p[col]), sz);
+		}
+	}
+
+	dump_duration(now, "save fourier to float file");
+}
+
 void save_matrix_to_binary_float(cv::Mat& source, std::string filename)
 {
-	assert(source.type() == CV_32F);		// 32 bit
+	assert(source.depth() == CV_32F);		// 32 bit
 	assert(source.channels() == 1);			// 1 chan
 
 	auto now = cv::getTickCount();
@@ -1041,6 +1076,7 @@ int main(int argc, char* argv[])
 
 	cv::Mat dftImage;
 	perform_dft_linewise(floatImage, dftImage);
+	save_fourier_to_binary_float(dftImage, inputName + ".cpp.fourier.f32");
 
 	cv::Mat magnitude;
 	format_matrix_to_magnitude(dftImage, magnitude);
