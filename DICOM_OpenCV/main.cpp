@@ -786,8 +786,8 @@ void lineDftFilter(cv::Mat& source, cv::Mat& target)
 {
 	auto now = cv::getTickCount();
 
-	float fs = 10.0;				// 10px/mm
-	float fg = 215 / 2.54 * 0.1;	// 215px/inch -> ~84,646px/cm -> ~8,4646px/mm
+	float fs = 10.0;				// 0,1px/cm -> 10px/mm | px=lines
+	float fg = 215 / 2.54 * 0.1;	// 215px/inch -> ~84,646px/cm -> ~8,4646px/mm 
 	float festimate = calc_f_estimate(fs, fg);	// ~1,53
 
 	cv::Mat filter = source.clone();

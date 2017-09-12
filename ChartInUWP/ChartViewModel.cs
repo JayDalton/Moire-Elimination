@@ -16,7 +16,7 @@ namespace ChartInUWP
 
     private CanvasControl _canvasControl;
     private ChartRenderer _chart;
-    private ImageRenderer _image;
+    private ImageLoader _image;
 
     #endregion Fields
 
@@ -24,7 +24,7 @@ namespace ChartInUWP
     {
       _canvasControl = canvasControl;
       _chart = new ChartRenderer();
-      _image = new ImageRenderer();
+      _image = new ImageLoader();
     }
 
     #region Properties

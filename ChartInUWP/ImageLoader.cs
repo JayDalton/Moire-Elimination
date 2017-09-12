@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ChartInUWP
 {
-  public class ImageRenderer
+  public class ImageLoader
   {
     #region Fields
 
@@ -14,7 +14,7 @@ namespace ChartInUWP
 
     #endregion Fields
 
-    public ImageRenderer()
+    public ImageLoader()
     {
       _imageLoader = new DicomLoader();
     }

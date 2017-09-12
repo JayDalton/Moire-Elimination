@@ -103,7 +103,7 @@
     <Compile Include="ChartService.cs" />
     <Compile Include="ChartRenderer.cs" />
     <Compile Include="DicomLoader.cs" />
-    <Compile Include="ImageRenderer.cs" />
+    <Compile Include="ImageLoader.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
