@@ -9,13 +9,14 @@ namespace ChartInUWP
   {
     #region Fields
 
-    private bool progressing = false;
-    private ImageSource _imageSource;
+    bool imageProgressing = false;
+    bool chartProgressing = false;
+    ImageSource _imageSource;
+    ChartRenderer _chart;
 
     private ChartService _chartService;
 
     private CanvasControl _canvasControl;
-    private ChartRenderer _chart;
     private ImageLoader _image;
 
     #endregion Fields
@@ -29,10 +30,16 @@ namespace ChartInUWP
 
     #region Properties
 
-    public bool Progressing
+    public bool ImageProgressing
     {
-      get { return progressing; }
-      set { SetProperty(ref progressing, value); }
+      get { return imageProgressing; }
+      set { SetProperty(ref imageProgressing, value); }
+    }
+
+    public bool ChartProgressing
+    {
+      get { return chartProgressing; }
+      set { SetProperty(ref chartProgressing, value); }
     }
 
     public ImageSource ImageSource
@@ -41,65 +48,12 @@ namespace ChartInUWP
       set { SetProperty(ref _imageSource, value); }
     }
 
-    private bool _isImageVisible;
-    public bool IsImageVisible
-    {
-      get { return _isImageVisible; }
-      set { SetProperty(ref _isImageVisible, value); }
-    }
-
-    private bool _isChartVisible;
-    public bool IsChartVisible
-    {
-      get { return _isChartVisible; }
-      set { SetProperty(ref _isChartVisible, value); }
-    }
-
-    double _chartScaleRow = default(double);
-    public double ChartScaleRowSlider
-    {
-      get { return _chartScaleRow; }
-      set
-      {
-        if (SetProperty(ref _chartScaleRow, value))
-        {
-          _canvasControl.Invalidate();
-        }
-      }
-    }
-
-    double _chartScaleCol = default(double);
-    public double ChartScaleColSlider
-    {
-      get { return _chartScaleCol; }
-      set
-      {
-        if (SetProperty(ref _chartScaleCol, value))
-        {
-          _canvasControl.Invalidate();
-        }
-      }
-    }
-
     public double ChartMoveRowSlider
     {
       get { return _chart.CurrentRow; }
       set
       {
         if (SetProperty(_chart.CurrentRow, value, () => _chart.CurrentRow = (int)value))
-        {
-          _canvasControl.Invalidate();
-        }
-      }
-    }
-
-    private double _chartMoveCol = default(double);
-    public double ChartMoveColSlider
-    {
-      get { return _chartMoveCol; }
-      set
-      {
-        if (SetProperty(ref _chartMoveCol, value))
         {
           _canvasControl.Invalidate();
         }
@@ -117,23 +71,23 @@ namespace ChartInUWP
 
     public async Task LoadDicomFile_Click()
     {
+      ImageProgressing = true;
       await _chart.LoadDicomFileAsync();
       ImageSource = _chart.ImageSource;
-      IsChartVisible = false;
-      IsImageVisible = true;
+      ImageProgressing = false;
     }
 
-    //public async Task LoadPackedFile_Click()
-    //{
-    //  await _chart.LoadPackedFileAsync();
-    //  _canvasControl.Invalidate();
-    //}
+    public async Task LoadPackedFile_Click()
+    {
+      await _chart.LoadChartDataAsync();
+      _canvasControl.Invalidate();
+    }
 
     public void LoadChartData_Click()
     {
+      ChartProgressing = true;
       _canvasControl.Invalidate();
-      IsImageVisible = false;
-      IsChartVisible = true;
+      ChartProgressing = false;
     }
 
     #endregion Events

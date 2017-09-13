@@ -32,7 +32,7 @@ namespace ChartInUWP
 
     public int CurrentRow { get; set; }
 
-    public ImageSource ImageSource => _dicomLoader.ImageSource;
+    public ImageSource ImageSource { get; private set; }
 
     #endregion Properties
 
@@ -41,6 +41,7 @@ namespace ChartInUWP
     public async Task LoadDicomFileAsync()
     {
       await _dicomLoader.LoadFromDicomFileAsync();
+      ImageSource = _dicomLoader.ImageSource;
     }
 
     //public async Task LoadPackedFileAsync()

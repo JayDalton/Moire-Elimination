@@ -6,172 +6,67 @@
     xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Loaded="Page_Loaded">
+    mc:Ignorable="d">
+
+    <Page.TopAppBar>
+        <CommandBar>
+            <AppBarToggleButton Icon="OpenFile" Label="load DICOM" Click="{x:Bind viewModel.LoadDicomFile_Click}" />
+            <AppBarToggleButton Icon="OpenLocal" Label="load Chart" Click="{x:Bind viewModel.LoadChartData_Click}" />
+            <CommandBar.Content>
+                <TextBlock Text="Now viewing..." Margin="12,14"/>
+            </CommandBar.Content>
+        </CommandBar>
+    </Page.TopAppBar>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <!--<ScrollViewer PointerWheelChanged="ScrollViewer_PointerWheelChanged"
-            Grid.Row="0" ZoomMode="Enabled"
-            HorizontalScrollBarVisibility="Auto"
-            VerticalScrollBarVisibility="Auto" 
-            HorizontalScrollMode="Enabled"
-            VerticalScrollMode="Enabled">
-        </ScrollViewer>-->
-        <Image 
-            Grid.Row="0" Grid.Column="0" Visibility="{x:Bind viewModel.IsImageVisible, Mode=OneWay}"
-            Source="{x:Bind viewModel.ImageSource, Mode=OneWay}" Stretch="Uniform"/>
-        <canvas:CanvasControl 
-            x:Name="GraphCanvas" 
-            Grid.Row="0" Grid.Column="0" Visibility="{x:Bind viewModel.IsChartVisible, Mode=OneWay}"
-            Draw="{x:Bind viewModel.RenderChartCanvas, Mode=OneWay}" Margin="5"/>
 
         <Grid x:Name="GreyImageGrid">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" x:Name="DicomImageView"/>
+                <ColumnDefinition Width="auto" x:Name="GraphSlider"/>
+                <ColumnDefinition Width="*" x:Name="DicomGraphView"/>
             </Grid.ColumnDefinitions>
-            <Image x:Name="GreyImageLeft" Grid.Column="0"/>
-            <Image x:Name="GreyImageRight" Grid.Column="1"/>
+
+            <Image 
+                Grid.Column="0" Stretch="Uniform"
+                Source="{x:Bind viewModel.ImageSource, Mode=OneWay}"/>
+
+            <ProgressRing 
+                Grid.Column="0" Width="80" Height="80"
+                IsActive="{x:Bind viewModel.ImageProgressing, Mode=OneWay}"/>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Button 
+                    Grid.Row="0" Click="GraphMoveYDecrease_Click" HorizontalAlignment="Stretch">
+                    <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
+                </Button>
+
+                <Slider 
+                    Grid.Row="1" Header="Lines" Margin="0, 10"
+                    Value="{x:Bind viewModel.ChartMoveRowSlider, Mode=TwoWay}"
+                    Orientation="Vertical" IsDirectionReversed="True"/>
+
+                <Button 
+                    Grid.Row="2" Click="GraphMoveYIncrease_Click" HorizontalAlignment="Stretch">
+                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
+                </Button>
+            </Grid>
+
+            <canvas:CanvasControl 
+                x:Name="GraphCanvas" Grid.Column="2" Margin="5"
+                Draw="{x:Bind viewModel.RenderChartCanvas, Mode=OneWay}"/>
+
+            <ProgressRing 
+                Grid.Column="2" Width="80" Height="80"
+                IsActive="{x:Bind viewModel.ChartProgressing, Mode=OneWay}"/>
+
         </Grid>
 
-        <ProgressRing 
-            x:Name="LoadProgress" 
-            Grid.Row="0" Grid.Column="0" 
-            IsActive="{x:Bind viewModel.Progressing, Mode=OneWay}"
-            Width="50" Height="50"/>
-
-        <Grid Grid.Row="1" Grid.Column="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            
-            <!--<Button 
-                x:Name="GraphScaleXDecrease"
-                Click="GraphScaleXDecrease_Click"
-                Grid.Row="0" Grid.Column="0" 
-                VerticalAlignment="Stretch">
-                <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-
-            <Slider 
-                x:Name="GraphScaleX" 
-                Value="{x:Bind viewModel.ChartScaleColSlider, Mode=TwoWay}"
-                Grid.Row="0" Grid.Column="1" Header="Scale X" 
-                Maximum="10.0" Minimum="1.0" Margin="10, 0"/>
-            
-            <!--<Button 
-                x:Name="GraphScaleXIncrease"
-                Click="GraphScaleXIncrease_Click"
-                Grid.Row="0" Grid.Column="2" 
-                VerticalAlignment="Stretch">
-                <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
-
-            <Button 
-                x:Name="GraphMoveXDecrease"
-                Click="GraphMoveXDecrease_Click"
-                Grid.Row="1" Grid.Column="0" 
-                VerticalAlignment="Stretch">
-                <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-
-            <Slider 
-                x:Name="GraphMoveX" 
-                Value="{x:Bind viewModel.ChartMoveColSlider, Mode=TwoWay}"
-                Grid.Row="1" Grid.Column="1" Header="Move X" Margin="10, 0"/>
-
-            <!--<Button 
-                x:Name="GraphMoveXIncrease"
-                Click="GraphMoveXIncrease_Click"
-                Grid.Row="1" Grid.Column="2" 
-                VerticalAlignment="Stretch">
-                <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-        </Grid>
-
-        <Grid Grid.Row="0" Grid.Column="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <!--<Button 
-                x:Name="GraphScaleYDecrease"
-                Click="GraphScaleYDecrease_Click"
-                Grid.Row="0" Grid.Column="0" 
-                HorizontalAlignment="Stretch">
-                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-
-            <Slider 
-                x:Name="GraphScaleY"  Header="Scale"
-                Grid.Row="1" Grid.Column="0" Margin="0, 10"
-                Value="{x:Bind viewModel.ChartScaleRowSlider, Mode=TwoWay}"
-                Orientation="Vertical" IsDirectionReversed="True"/>
-
-            <!--<Button 
-                x:Name="GraphScaleYIncrease"
-                Click="{x:Bind GraphScaleY.(IValueProvider.Value)}"
-                Grid.Row="2" Grid.Column="0" 
-                HorizontalAlignment="Stretch">
-                <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>
-
-            <Button 
-                x:Name="GraphMoveYDecrease"
-                Click="GraphMoveYDecrease_Click"
-                Grid.Row="0" Grid.Column="1" 
-                HorizontalAlignment="Stretch">
-                <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-
-            <Slider 
-                x:Name="GraphMoveY" Header="Move"  
-                Grid.Row="1" Grid.Column="1" Margin="0, 10"
-                Value="{x:Bind viewModel.ChartMoveRowSlider, Mode=TwoWay}"
-                Orientation="Vertical" IsDirectionReversed="True"/>
-
-            <!--<Button 
-                x:Name="GraphMoveYIncrease"
-                Click="GraphMoveYIncrease_Click"
-                Grid.Row="2" Grid.Column="1" 
-                HorizontalAlignment="Stretch">
-                <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
-            </Button>-->
-        </Grid>
-
-        <Grid Grid.Row="1" Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Button 
-                Grid.Row="0" Content="Load Dicom" Background="OrangeRed"
-                Click="{x:Bind viewModel.LoadDicomFile_Click}" 
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Button 
-                Grid.Row="1" Content="Load Chart" Background="OrangeRed"
-                Click="{x:Bind viewModel.LoadChartData_Click}" 
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        </Grid>
     </Grid>
 </Page>

@@ -53,7 +53,7 @@ namespace ChartInUWP
     public IEnumerable<float> GetRow(int row)
     {
       var start = row < Rows ? row * Cols : 0;
-      return Magnitudes.Skip(start).Take(Cols);
+      return Samples.Skip(start).Take(Cols);
     }
 
     // GetRow(2, 20, 15)
@@ -61,7 +61,7 @@ namespace ChartInUWP
     {
       var start = row < Rows ? row * Cols : 0;
       var length = len < Cols ? len : 0;
-      return Magnitudes.Skip(start).Take(length);
+      return Samples.Skip(start).Take(length);
     }
 
     public async Task LoadFromDicomFileAsync()
@@ -93,7 +93,7 @@ namespace ChartInUWP
                 .ToArray();
               GlobalMaxValue = Samples.Max();
               GlobalMinValue = Samples.Min();
-              performFourierTransform();
+              //performFourierTransform();
             }
           }
         }

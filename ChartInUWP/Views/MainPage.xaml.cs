@@ -49,13 +49,20 @@ namespace ChartInUWP
       viewModel = new ChartViewModel(GraphCanvas);
     }
 
-    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
     {
-      //viewModel.Progressing = true;
-      //RenderRawImage();
-      //await ReadInputData();
+
     }
 
+    private void GraphMoveYDecrease_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void AppBarButton_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
   }
 
 }
