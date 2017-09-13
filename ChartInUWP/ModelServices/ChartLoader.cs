@@ -21,7 +21,7 @@ namespace ChartInUWP
   {
     #region Fields
 
-    private ChartMatrix _matrix;
+    private MatrixStruct _matrix;
     private DicomFile _dicomFile;
     //private ImageSource _imageSource;
 
@@ -73,7 +73,7 @@ namespace ChartInUWP
         try
         {
           var content = await FileIO.ReadBufferAsync(file);
-          _matrix = MessagePackSerializer.Deserialize<ChartMatrix>(content.AsStream());
+          _matrix = MessagePackSerializer.Deserialize<MatrixStruct>(content.AsStream());
 
           GlobalMaxValue = _matrix.data.Max();
           GlobalMinValue = _matrix.data.Min();

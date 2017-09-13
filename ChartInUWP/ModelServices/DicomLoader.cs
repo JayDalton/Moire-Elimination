@@ -110,6 +110,11 @@ namespace ChartInUWP
       try
       {
         var complex = Samples.Select(v => new Complex32(v, 0)).ToArray();
+
+        for (int i = 0; i < complex.Length / 100; i++)
+        {
+
+        }
         Fourier.Forward(complex, FourierOptions.Matlab);
         Magnitudes = complex.Select(c => c.Magnitude);
         var magnitude = complex.First().Magnitude;

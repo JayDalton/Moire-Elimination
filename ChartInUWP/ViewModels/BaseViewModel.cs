@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace ChartInUWP
 {
-  public class ViewModelBase : INotifyPropertyChanged  // DependencyObject
+  public class BaseViewModel : INotifyPropertyChanged  // DependencyObject
   {
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -37,7 +37,7 @@ namespace ChartInUWP
     }
   }
 
-  public class ViewModelBase<T> : ViewModelBase where T : class, new()
+  public class ViewModelBase<T> : BaseViewModel where T : class, new()
   {
     protected T This;
 

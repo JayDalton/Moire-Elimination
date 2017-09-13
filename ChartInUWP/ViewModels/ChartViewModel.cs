@@ -5,7 +5,7 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ChartViewModel : ViewModelBase
+  public class ChartViewModel : BaseViewModel
   {
     #region Fields
 
