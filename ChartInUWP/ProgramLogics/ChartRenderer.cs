@@ -32,6 +32,8 @@ namespace ChartInUWP
 
     public int CurrentRow { get; set; }
 
+    public double NumberOfRows { get; private set; }
+
     public ImageSource ImageSource { get; private set; }
 
     #endregion Properties
@@ -42,6 +44,7 @@ namespace ChartInUWP
     {
       await _dicomLoader.LoadFromDicomFileAsync();
       ImageSource = _dicomLoader.ImageSource;
+      NumberOfRows = _dicomLoader.Rows;
     }
 
     //public async Task LoadPackedFileAsync()
@@ -51,7 +54,8 @@ namespace ChartInUWP
 
     public async Task LoadChartDataAsync()
     {
-      await Task.Delay(1000);
+      _dicomLoader.LoadDicomGraph();
+      NumberOfRows = _dicomLoader.Rows;
     }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)

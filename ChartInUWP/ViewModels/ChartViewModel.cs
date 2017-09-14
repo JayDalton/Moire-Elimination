@@ -9,6 +9,7 @@ namespace ChartInUWP
   {
     #region Fields
 
+    double _numberOfRows = 0;
     bool imageProgressing = false;
     bool chartProgressing = false;
     ImageSource _imageSource;
@@ -40,6 +41,12 @@ namespace ChartInUWP
     {
       get { return chartProgressing; }
       set { SetProperty(ref chartProgressing, value); }
+    }
+
+    public double NumberOfRows
+    {
+      get { return _numberOfRows; }
+      set { SetProperty(ref _numberOfRows, value); }
     }
 
     public ImageSource ImageSource
@@ -83,9 +90,11 @@ namespace ChartInUWP
       _canvasControl.Invalidate();
     }
 
-    public void LoadChartData_Click()
+    public async Task LoadChartData_Click()
     {
       ChartProgressing = true;
+      await _chart.LoadChartDataAsync();
+      NumberOfRows = _chart.NumberOfRows;
       _canvasControl.Invalidate();
       ChartProgressing = false;
     }
