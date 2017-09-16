@@ -13,28 +13,26 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ChartRenderer
+  public class ChartRenderer : BaseNotification
   {
     #region Fields
 
-    private bool renderArea = false;
-    private float DataStrokeThickness = 1;
-    private Color DataStrokeColor = Colors.Black;
-    private DicomLoader _dicomLoader = new DicomLoader();
+    bool renderArea = false;
+    float DataStrokeThickness = 1;
+    Color DataStrokeColor = Colors.Black;
+    DicomLoader _dicomLoader = new DicomLoader();
 
     #endregion Fields
 
-    public ChartRenderer()
-    {
-    }
+    public ChartRenderer() {}
 
     #region Properties
 
     public int CurrentRow { get; set; }
 
-    public double NumberOfRows { get; private set; }
+    public double NumberOfRows { get { return _dicomLoader.Rows; } }
 
-    public ImageSource ImageSource { get; private set; }
+    //public ImageSource ImageSource { get; private set; }
 
     #endregion Properties
 
@@ -42,9 +40,15 @@ namespace ChartInUWP
 
     public async Task LoadDicomFileAsync()
     {
-      await _dicomLoader.LoadFromDicomFileAsync();
-      ImageSource = _dicomLoader.ImageSource;
-      NumberOfRows = _dicomLoader.Rows;
+      await _dicomLoader.OpenDicomFileAsync();
+      //ImageSource = _dicomLoader.GetDicomRenderImage<ImageSource>();
+      //ImageSource = _dicomLoader.ImageSource;
+      //NumberOfRows = _dicomLoader.Rows;
+    }
+
+    public ImageSource GetDicomImage()
+    {
+      return _dicomLoader.GetDicomRenderImage<ImageSource>();
     }
 
     //public async Task LoadPackedFileAsync()
@@ -54,8 +58,8 @@ namespace ChartInUWP
 
     public async Task LoadChartDataAsync()
     {
-      _dicomLoader.LoadDicomGraph();
-      NumberOfRows = _dicomLoader.Rows;
+      await _dicomLoader.LoadDicomGraph();
+      //NumberOfRows = _dicomLoader.Rows;
     }
 
     public void OnDrawGraph(CanvasControl sender, CanvasDrawEventArgs args)
@@ -82,7 +86,7 @@ namespace ChartInUWP
       var canvasHeight = (float)canvas.ActualHeight;
       var localMin = values.Min();
       var localMax = values.Max();
-      var scaleY = canvasWidth / localMax;
+      var scaleY = canvasHeight / localMax;
       var scaleX = canvasWidth / values.Length;
 
       using (var cpb = new CanvasPathBuilder(args.DrawingSession))

@@ -5,7 +5,7 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ChartViewModel : BaseViewModel
+  public class ChartViewModel : BaseNotification
   {
     #region Fields
 
@@ -22,9 +22,9 @@ namespace ChartInUWP
 
     #endregion Fields
 
-    public ChartViewModel(CanvasControl canvasControl)
+    public ChartViewModel(/*CanvasControl canvasControl*/)
     {
-      _canvasControl = canvasControl;
+      //_canvasControl = canvasControl;
       _chart = new ChartRenderer();
       _image = new ImageLoader();
     }
@@ -73,14 +73,15 @@ namespace ChartInUWP
 
     public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
     {
+      _canvasControl = sender;
       _chart.OnDrawGraph(sender, args);
     }
 
     public async Task LoadDicomFile_Click()
     {
-      ImageProgressing = true;
       await _chart.LoadDicomFileAsync();
-      ImageSource = _chart.ImageSource;
+      ImageProgressing = true;
+      ImageSource = _chart.GetDicomImage();
       ImageProgressing = false;
     }
 

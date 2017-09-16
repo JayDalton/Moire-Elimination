@@ -3,7 +3,7 @@
 namespace ChartInUWP
 {
   [MessagePackObject]
-  public struct MatrixStruct
+  public struct MatrixStruct<T>
   {
     [Key(0)]
     public ushort rows { get; set; }
@@ -12,6 +12,6 @@ namespace ChartInUWP
     public ushort cols { get; set; }
 
     [Key(2)]
-    public float[] data { get; set; } // IList<short>
+    public T[] data { get; set; } // IList<short>
   }
 }

@@ -46,7 +46,7 @@ namespace ChartInUWP
     public MainPage()
     {
       this.InitializeComponent();
-      viewModel = new ChartViewModel(GraphCanvas);
+      viewModel = new ChartViewModel();
     }
 
     private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
