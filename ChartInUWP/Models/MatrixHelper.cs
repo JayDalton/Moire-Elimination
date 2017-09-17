@@ -8,6 +8,13 @@ namespace ChartInUWP.Models
 {
   public static class MatrixHelper
   {
+    public static T[] SubArray<T>(this T[] data, int index, int length)
+    {
+      T[] result = new T[length];
+      Array.Copy(data, index, result, 0, length);
+      return result;
+    }
+
     public static IEnumerable<IEnumerable<T>> Split<T>(this T[] array, int size)
     {
       for (var i = 0; i < (float)array.Length / size; i++)

@@ -12,6 +12,7 @@ namespace ChartInUWP
 
     double _currentRow = 0;
     double _numberOfRows = 0;
+    string _contentTitle = "Datei xyz; rows: ... cols: ...";
     bool imageProgressing = false;
     bool chartProgressing = false;
     CanvasControl _canvasControl;
@@ -26,6 +27,13 @@ namespace ChartInUWP
     }
 
     #region Properties
+
+
+    public string ContentTitle
+    {
+      get { return _contentTitle; }
+      set { SetProperty(ref _contentTitle, value); }
+    }
 
     public bool ImageProgressing
     {
@@ -70,28 +78,24 @@ namespace ChartInUWP
     public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
     {
       _canvasControl = sender;
-      
-      // currentRow, args.DrawingSession, Size()
-      _editor.RenderChart(
-        _currentRow, 
-        new Size(sender.ActualHeight, sender.ActualWidth), 
-        args.DrawingSession
-      );
+      var size = new Size(sender.ActualHeight, sender.ActualWidth);
+      _editor.RenderChart(_currentRow, size, args.DrawingSession);
     }
 
     public async Task LoadDicomFile_Click()
     {
       await _editor.LoadDicomFileAsync();
+      ContentTitle = _editor.StorageFile.DisplayName;
       ImageProgressing = true;
       ImageSource = await _editor.GetDicomImageAsync();
       ImageProgressing = false;
     }
 
-    public async Task LoadPackedFile_Click()
-    {
-      await _editor.LoadChartDataAsync();
-      _canvasControl.Invalidate();
-    }
+    //public async Task LoadPackedFile_Click()
+    //{
+    //  await _editor.LoadChartDataAsync();
+    //  //_canvasControl.Invalidate();
+    //}
 
     public async Task LoadChartData_Click()
     {

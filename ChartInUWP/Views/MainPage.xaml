@@ -13,7 +13,7 @@
             <AppBarToggleButton Icon="OpenFile" Label="load DICOM" Click="{x:Bind viewModel.LoadDicomFile_Click}" />
             <AppBarToggleButton Icon="OpenLocal" Label="load Chart" Click="{x:Bind viewModel.LoadChartData_Click}" />
             <CommandBar.Content>
-                <TextBlock Text="Now viewing..." Margin="12,14"/>
+                <TextBlock Text="{x:Bind viewModel.ContentTitle, Mode=OneWay}" Margin="12,14"/>
             </CommandBar.Content>
         </CommandBar>
     </Page.TopAppBar>

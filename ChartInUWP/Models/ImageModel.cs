@@ -18,7 +18,7 @@ namespace ChartInUWP
     #region Fields
 
     BitmapDecoder _decoder;
-    StorageFile _storageFile;
+    //StorageFile _storageFile;
 
     #endregion Fields
 
@@ -27,6 +27,9 @@ namespace ChartInUWP
     }
 
     #region Properties
+
+    public StorageFile File { get; private set; }
+
     #endregion Properties
 
     #region Events
@@ -46,10 +49,10 @@ namespace ChartInUWP
       picker.FileTypeFilter.Add(".jpg");
       picker.FileTypeFilter.Add(".tif");
 
-      _storageFile = await picker.PickSingleFileAsync();
-      if (_storageFile != null)
+      File = await picker.PickSingleFileAsync();
+      if (File != null)
       {
-        using (var stream = await _storageFile.OpenAsync(FileAccessMode.Read))
+        using (var stream = await File.OpenAsync(FileAccessMode.Read))
         {
           _decoder = await BitmapDecoder.CreateAsync(stream);
           return true;

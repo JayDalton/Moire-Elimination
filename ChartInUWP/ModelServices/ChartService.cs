@@ -14,54 +14,42 @@ using Windows.UI;
 
 namespace ChartInUWP
 {
-  public class ChartService
+  public class ChartService : MatrixStruct<float>
   {
     #region Fields
 
     bool renderArea = false;
     float DataStrokeThickness = 1;
     Color DataStrokeColor = Colors.Black;
-    MatrixStruct<float> _matrix;
 
     #endregion Fields
 
-    public ChartService()
+    public ChartService(MatrixStruct<float> matrix) : base(matrix)
     {
 
     }
 
     #region Properties
 
-    public ushort DataRows { get; set; }
-    public ushort DataCols { get; set; }
-    public float DataMinimum { get; set; }
-    public float DataMaximum { get; set; }
+    public ushort DataRows { get { return base.rows; } }
+    public ushort DataCols { get { return base.cols; } }
+    public float DataMinimum { get { return base.data.Min(); } }
+    public float DataMaximum { get { return base.data.Max(); } }
 
     #endregion Properties
 
     #region Methods
 
-    public float[] GetRow(int row)
-    {
-      return new float[0];
-    }
-
-    public void LoadMatrix(MatrixStruct<float> matrix)
-    {
-      // calc max-min values
-
-    }
-
     public void RenderChartRow(double row, Size size, CanvasDrawingSession session)
     {
       session.Clear(Colors.White);
 
-      if (row < _matrix.rows)
+      if (row < base.rows)
       {
         var globalMin = DataMinimum;
         var globalMax = DataMaximum;
 
-        var values = _matrix.GetRow((int)row);
+        var values = base.GetRowSkip((int)row);
 
         RenderData(size, session, values.ToArray());
       }

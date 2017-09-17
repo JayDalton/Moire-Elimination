@@ -31,7 +31,7 @@ namespace ChartInUWP
 
     public ImageEditor()
     {
-      _chartService = new ChartService();
+      //_chartService = new ChartService();
     }
 
     #region Properties
@@ -41,6 +41,8 @@ namespace ChartInUWP
     public double NumberOfRows { get { return _chartService.DataRows; } }
 
     public ImageSource ImageSource { get; private set; }
+
+    public StorageFile StorageFile { get; private set; }
 
     public MatrixStruct<ushort> ImageMatrix { get; private set; }
 
@@ -53,6 +55,7 @@ namespace ChartInUWP
       _inputSource = new DicomModel();
       if (await _inputSource.OpenFileAsync())
       {
+        StorageFile = _inputSource.File;
         var imgSource = await _inputSource.GetImageSourceAsync();
         var imgMatrix = await _inputSource.GetPixelDataAsync();
       }
@@ -70,15 +73,10 @@ namespace ChartInUWP
 
     public void RenderChart(double row, Size size, CanvasDrawingSession ds)
     {
-      _chartService.RenderChartRow(row, size, ds);
-    }
-
-    private void handleMatrxToChart(MatrixStruct<ushort> matrix)
-    {
-      var fourier = new FourierService(_inputSource);
-      var magnitude = fourier.GetMatrixMagnitude();   // half width
-      var renderer = new ChartService();
-      //renderer
+      if (_chartService != null)
+      {
+        _chartService.RenderChartRow(row, size, ds);
+      }
     }
 
     public async Task LoadMatrixFileAsync()
@@ -94,6 +92,14 @@ namespace ChartInUWP
     public async Task LoadChartDataAsync()
     {
       var imgMatrix = await _inputSource.GetPixelDataAsync();
+    }
+
+    private void handleMatrxToChart(MatrixStruct<ushort> matrix)
+    {
+      var fourier = new FourierService(_inputSource);
+      var magnitude = fourier.GetMatrixMagnitude();   // half width
+      var renderer = new ChartService(magnitude);
+      //renderer
     }
 
     #endregion Methods

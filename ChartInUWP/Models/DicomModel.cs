@@ -22,7 +22,7 @@ namespace ChartInUWP
   {
     #region Fields
 
-    StorageFile _storageFile;
+    //StorageFile _storageFile;
     DicomFile _dicomFile = new DicomFile();
 
     #endregion Fields
@@ -30,6 +30,9 @@ namespace ChartInUWP
     public DicomModel() {}
 
     #region Properties
+
+    public StorageFile File { get; private set; }
+
     #endregion Properties
 
     #region Methods
@@ -45,12 +48,12 @@ namespace ChartInUWP
       picker.FileTypeFilter.Add(".dcm");
       picker.FileTypeFilter.Add(".dic");
 
-      _storageFile = await picker.PickSingleFileAsync();
-      if (_storageFile != null)
+      File = await picker.PickSingleFileAsync();
+      if (File != null)
       {
         try
         {
-          var stream = await _storageFile.OpenStreamForReadAsync();
+          var stream = await File.OpenStreamForReadAsync();
           _dicomFile = await DicomFile.OpenAsync(stream);
           return true;
         }
@@ -69,8 +72,8 @@ namespace ChartInUWP
       {
         try
         {
-          _storageFile = file;
-          var stream = await file.OpenStreamForReadAsync();
+          File = file;
+          var stream = await File.OpenStreamForReadAsync();
           _dicomFile = await DicomFile.OpenAsync(stream);
           return true;
         }
