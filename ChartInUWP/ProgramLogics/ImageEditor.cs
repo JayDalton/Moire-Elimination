@@ -1,4 +1,6 @@
-﻿using Microsoft.Graphics.Canvas.Brushes;
+﻿using ChartInUWP.Models;
+using ChartInUWP.ModelServices;
+using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
@@ -8,31 +10,34 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI;
 using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ChartRenderer : BaseNotification
+  public class ImageEditor
   {
     #region Fields
 
     bool renderArea = false;
+    IPixelDataSource _imageSource;
+    FourierService _chartService;
     float DataStrokeThickness = 1;
     Color DataStrokeColor = Colors.Black;
-    DicomLoader _dicomLoader = new DicomLoader();
 
     #endregion Fields
 
-    public ChartRenderer() {}
+    public ImageEditor() {}
 
     #region Properties
 
     public int CurrentRow { get; set; }
 
-    public double NumberOfRows { get { return _dicomLoader.Rows; } }
+    public double NumberOfRows { get { return _chartService.DataRows; } }
 
-    //public ImageSource ImageSource { get; private set; }
+    public ImageSource ImageSource { get; private set; }
 
     #endregion Properties
 
@@ -40,15 +45,18 @@ namespace ChartInUWP
 
     public async Task LoadDicomFileAsync()
     {
-      await _dicomLoader.OpenDicomFileAsync();
-      //ImageSource = _dicomLoader.GetDicomRenderImage<ImageSource>();
-      //ImageSource = _dicomLoader.ImageSource;
+      _imageSource = new DicomSource();
+      if (await _imageSource.OpenFileAsync())
+      {
+        var imgsource = _imageSource.GetImageSourceAsync();
+        var pixdata = _imageSource.GetPixelDataAsync();
+      }
       //NumberOfRows = _dicomLoader.Rows;
     }
 
-    public ImageSource GetDicomImage()
+    public async Task<ImageSource> GetDicomImageAsync()
     {
-      return _dicomLoader.GetDicomRenderImage<ImageSource>();
+      return await _imageSource.GetImageSourceAsync();
     }
 
     //public async Task LoadPackedFileAsync()
@@ -58,7 +66,7 @@ namespace ChartInUWP
 
     public async Task LoadChartDataAsync()
     {
-      await _dicomLoader.LoadDicomGraph();
+      await _chartService.LoadGraphDataAsync();
       //NumberOfRows = _dicomLoader.Rows;
     }
 
@@ -66,12 +74,12 @@ namespace ChartInUWP
     {
       args.DrawingSession.Clear(Colors.White);
 
-      if (CurrentRow < _dicomLoader.Rows)
+      if (CurrentRow < _chartService.DataRows)
       {
-        var globalMin = _dicomLoader.GlobalMinValue;
-        var globalMax = _dicomLoader.GlobalMaxValue;
+        var globalMin = _chartService.DataMinimum;
+        var globalMax = _chartService.DataMaximum;
 
-        var values = _dicomLoader.GetRow(CurrentRow);
+        var values = _chartService.GetRow(CurrentRow);
 
         RenderData(sender, args, values.ToArray());
       }

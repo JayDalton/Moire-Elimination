@@ -10,13 +10,13 @@ namespace ChartInUWP
   {
     #region Fields
 
-    private DicomLoader _imageLoader;
+    private DicomSource _imageLoader;
 
     #endregion Fields
 
     public ImageLoader()
     {
-      _imageLoader = new DicomLoader();
+      _imageLoader = new DicomSource();
     }
 
     #region Properties

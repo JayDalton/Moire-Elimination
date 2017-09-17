@@ -12,21 +12,19 @@ namespace ChartInUWP
     double _numberOfRows = 0;
     bool imageProgressing = false;
     bool chartProgressing = false;
+    CanvasControl _canvasControl;
     ImageSource _imageSource;
-    ChartRenderer _chart;
+    ImageEditor _editor;
 
-    private ChartService _chartService;
 
-    private CanvasControl _canvasControl;
-    private ImageLoader _image;
+    //private ImageLoader _image;
 
     #endregion Fields
 
-    public ChartViewModel(/*CanvasControl canvasControl*/)
+    public ChartViewModel()
     {
-      //_canvasControl = canvasControl;
-      _chart = new ChartRenderer();
-      _image = new ImageLoader();
+      _editor = new ImageEditor();
+      //_image = new ImageLoader();
     }
 
     #region Properties
@@ -51,16 +49,16 @@ namespace ChartInUWP
 
     public ImageSource ImageSource
     {
-      get { return _imageSource; }
+      get { return _editor.ImageSource; }
       set { SetProperty(ref _imageSource, value); }
     }
 
     public double ChartMoveRowSlider
     {
-      get { return _chart.CurrentRow; }
+      get { return _editor.CurrentRow; }
       set
       {
-        if (SetProperty(_chart.CurrentRow, value, () => _chart.CurrentRow = (int)value))
+        if (SetProperty(_editor.CurrentRow, value, () => _editor.CurrentRow = (int)value))
         {
           _canvasControl.Invalidate();
         }
@@ -74,28 +72,28 @@ namespace ChartInUWP
     public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
     {
       _canvasControl = sender;
-      _chart.OnDrawGraph(sender, args);
+      _editor.OnDrawGraph(sender, args);
     }
 
     public async Task LoadDicomFile_Click()
     {
-      await _chart.LoadDicomFileAsync();
+      await _editor.LoadDicomFileAsync();
       ImageProgressing = true;
-      ImageSource = _chart.GetDicomImage();
+      ImageSource = await _editor.GetDicomImageAsync();
       ImageProgressing = false;
     }
 
     public async Task LoadPackedFile_Click()
     {
-      await _chart.LoadChartDataAsync();
+      await _editor.LoadChartDataAsync();
       _canvasControl.Invalidate();
     }
 
     public async Task LoadChartData_Click()
     {
       ChartProgressing = true;
-      await _chart.LoadChartDataAsync();
-      NumberOfRows = _chart.NumberOfRows;
+      await _editor.LoadChartDataAsync();
+      NumberOfRows = _editor.NumberOfRows;
       _canvasControl.Invalidate();
       ChartProgressing = false;
     }

@@ -60,7 +60,7 @@
             </Grid>
 
             <canvas:CanvasControl 
-                x:Name="GraphCanvas" Grid.Column="2" Margin="5"
+                Grid.Column="2" Margin="5"
                 Draw="{x:Bind viewModel.RenderChartCanvas, Mode=OneWay}"/>
 
             <ProgressRing 
