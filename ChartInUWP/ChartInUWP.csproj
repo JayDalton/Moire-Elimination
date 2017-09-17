@@ -98,7 +98,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\ChartLoader.cs" />
+    <Compile Include="Models\ChartModel.cs" />
     <Compile Include="ModelServices\DSPLib.cs" />
     <Compile Include="ModelServices\FourierService.cs" />
     <Compile Include="Models\IPixelDataSource.cs" />
@@ -106,8 +106,8 @@
     <Compile Include="Models\MatrixStruct.cs" />
     <Compile Include="ModelServices\ChartService.cs" />
     <Compile Include="ProgramLogics\ImageEditor.cs" />
-    <Compile Include="Models\DicomSource.cs" />
-    <Compile Include="Models\ImageLoader.cs" />
+    <Compile Include="Models\DicomModel.cs" />
+    <Compile Include="Models\ImageModel.cs" />
     <Compile Include="Views\MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>

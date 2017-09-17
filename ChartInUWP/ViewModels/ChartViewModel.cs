@@ -1,6 +1,7 @@
 ﻿using MathNet.Numerics;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
@@ -9,6 +10,7 @@ namespace ChartInUWP
   {
     #region Fields
 
+    double _currentRow = 0;
     double _numberOfRows = 0;
     bool imageProgressing = false;
     bool chartProgressing = false;
@@ -16,15 +18,11 @@ namespace ChartInUWP
     ImageSource _imageSource;
     ImageEditor _editor;
 
-
-    //private ImageLoader _image;
-
     #endregion Fields
 
     public ChartViewModel()
     {
       _editor = new ImageEditor();
-      //_image = new ImageLoader();
     }
 
     #region Properties
@@ -49,16 +47,16 @@ namespace ChartInUWP
 
     public ImageSource ImageSource
     {
-      get { return _editor.ImageSource; }
+      get { return _imageSource; }
       set { SetProperty(ref _imageSource, value); }
     }
 
     public double ChartMoveRowSlider
     {
-      get { return _editor.CurrentRow; }
+      get { return _currentRow; }
       set
       {
-        if (SetProperty(_editor.CurrentRow, value, () => _editor.CurrentRow = (int)value))
+        if (SetProperty(ref _currentRow, value))
         {
           _canvasControl.Invalidate();
         }
@@ -72,7 +70,13 @@ namespace ChartInUWP
     public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
     {
       _canvasControl = sender;
-      _editor.OnDrawGraph(sender, args);
+      
+      // currentRow, args.DrawingSession, Size()
+      _editor.RenderChart(
+        _currentRow, 
+        new Size(sender.ActualHeight, sender.ActualWidth), 
+        args.DrawingSession
+      );
     }
 
     public async Task LoadDicomFile_Click()

@@ -17,7 +17,7 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class ChartLoader
+  public class ChartModel
   {
     #region Fields
 
@@ -27,7 +27,7 @@ namespace ChartInUWP
 
     #endregion Fields
 
-    public ChartLoader() {}
+    public ChartModel() {}
 
     #region Properties
 

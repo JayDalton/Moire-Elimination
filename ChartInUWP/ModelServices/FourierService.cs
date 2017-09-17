@@ -90,6 +90,11 @@ namespace ChartInUWP.ModelServices
       }
     }
 
+    public MatrixStruct<float> GetMatrixMagnitude()
+    {
+      return default(MatrixStruct<float>);
+    }
+
     #endregion Methods
   }
 }

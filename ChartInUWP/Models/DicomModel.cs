@@ -18,7 +18,7 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class DicomSource : IPixelDataSource
+  public class DicomModel : IPixelDataSource
   {
     #region Fields
 
@@ -27,7 +27,7 @@ namespace ChartInUWP
 
     #endregion Fields
 
-    public DicomSource() {}
+    public DicomModel() {}
 
     #region Properties
     #endregion Properties
@@ -85,14 +85,13 @@ namespace ChartInUWP
 
     public async Task<ImageSource> GetImageSourceAsync()
     {
-      return await Task.Run(() => {
-        if (ContainsData())
-        {
-          var dicomImage = new DicomImage(_dicomFile.Dataset);
-          return dicomImage.RenderImage().As<ImageSource>();
-        }
-        return default(ImageSource);
-      });
+      await Task.Delay(0);
+      if (ContainsData())
+      {
+        var dicomImage = new DicomImage(_dicomFile.Dataset);
+        return dicomImage.RenderImage().As<ImageSource>();
+      }
+      return default(ImageSource);
     }
 
     public async Task<MatrixStruct<ushort>> GetPixelDataAsync()
