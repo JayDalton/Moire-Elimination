@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ChartInUWP
+namespace ChartInUWP.ViewModels
 {
   public class BaseNotification : INotifyPropertyChanged  // DependencyObject
   {

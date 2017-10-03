@@ -31,6 +31,7 @@ using Windows.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
 using Windows.UI.Xaml.Media.Imaging;
 using MessagePack;
+using ChartInUWP.ViewModels;
 
 // Die Elementvorlage "Leere Seite" wird unter https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x407 dokumentiert.
 
@@ -41,12 +42,9 @@ namespace ChartInUWP
   /// </summary>
   public sealed partial class MainPage : Page
   {
-    private ChartViewModel viewModel;
-
     public MainPage()
     {
       this.InitializeComponent();
-      viewModel = new ChartViewModel();
     }
 
     private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
@@ -60,6 +58,11 @@ namespace ChartInUWP
     }
 
     private void AppBarButton_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void Page_Loaded(object sender, RoutedEventArgs e)
     {
 
     }

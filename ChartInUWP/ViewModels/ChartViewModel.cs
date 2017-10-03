@@ -1,22 +1,21 @@
-﻿using MathNet.Numerics;
+﻿using ChartInUWP.ViewModels.Commands;
+using MathNet.Numerics;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using Windows.ApplicationModel;
 using Windows.Foundation;
+using Windows.UI;
 using Windows.UI.Xaml.Media;
 
-namespace ChartInUWP
+namespace ChartInUWP.ViewModels
 {
   public class ChartViewModel : BaseNotification
   {
     #region Fields
 
-    double _currentRow = 0;
-    double _numberOfRows = 0;
-    string _contentTitle = "Datei xyz; rows: ... cols: ...";
-    bool imageProgressing = false;
-    bool chartProgressing = false;
-    CanvasControl _canvasControl;
-    ImageSource _imageSource;
     ImageEditor _editor;
 
     #endregion Fields
@@ -24,65 +23,106 @@ namespace ChartInUWP
     public ChartViewModel()
     {
       _editor = new ImageEditor();
+
+      CanvasDevice device = CanvasDevice.GetSharedDevice();
+      CanvasSource = new CanvasImageSource(device, 300, 300, 96);
+
+      if (DesignMode.DesignModeEnabled)
+      {
+        
+        ContentTitle = "Design Mode";
+      }
+      else
+      {
+        ContentTitle = "Datei xyz; rows: ... cols: ...";
+      }
     }
 
     #region Properties
 
-
-    public string ContentTitle
-    {
-      get { return _contentTitle; }
-      set { SetProperty(ref _contentTitle, value); }
-    }
-
-    public bool ImageProgressing
-    {
-      get { return imageProgressing; }
-      set { SetProperty(ref imageProgressing, value); }
-    }
-
-    public bool ChartProgressing
-    {
-      get { return chartProgressing; }
-      set { SetProperty(ref chartProgressing, value); }
-    }
-
-    public double NumberOfRows
-    {
-      get { return _numberOfRows; }
-      set { SetProperty(ref _numberOfRows, value); }
-    }
-
+    ImageSource _imageSource;
     public ImageSource ImageSource
     {
       get { return _imageSource; }
       set { SetProperty(ref _imageSource, value); }
     }
 
-    public double ChartMoveRowSlider
+    CanvasImageSource _canvasSource;
+    public CanvasImageSource CanvasSource
     {
-      get { return _currentRow; }
+      get { return _canvasSource; }
+      set { SetProperty(ref _canvasSource, value); }
+    }
+
+    string _contentTitle;
+    public string ContentTitle
+    {
+      get { return _contentTitle; }
+      set { SetProperty(ref _contentTitle, value); }
+    }
+
+    bool _imageProgressing = false;
+    public bool ImageProgressing
+    {
+      get { return _imageProgressing; }
+      set { SetProperty(ref _imageProgressing, value); }
+    }
+
+    bool _chartProgressing = false;
+    public bool ChartProgressing
+    {
+      get { return _chartProgressing; }
+      set { SetProperty(ref _chartProgressing, value); }
+    }
+
+    double _rangeMaximum = 100;
+    public double SliderRangeMaximum
+    {
+      get { return _rangeMaximum; }
+      set { SetProperty(ref _rangeMaximum, value); }
+    }
+
+    double _rangeValue = default;
+    public double SlideRangeValue
+    {
+      get { return _rangeValue; }
       set
       {
-        if (SetProperty(ref _currentRow, value))
+        if (SetProperty(ref _rangeValue, value))
         {
-          _canvasControl.Invalidate();
+          Debug.WriteLine(value);
+          //_canvasControl.Invalidate();
         }
       }
     }
 
     #endregion Properties
 
-    #region Events
+    #region Commands
 
-    public void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
+    public ICommand LoadDicomFileCommand => new ActionCommand(loadDicomFileAsync);
+    public ICommand LoadChartDataCommand => new ActionCommand(loadChartDataAsync);
+    public ICommand LoadChartLineCommand => new ActionCommand(RenderTest);
+
+    #endregion Commands
+
+    #region Methods
+
+    private void RenderTest()
     {
-      _canvasControl = sender;
-      var size = new Size(sender.ActualHeight, sender.ActualWidth);
-      _editor.RenderChart(_currentRow, size, args.DrawingSession);
+      using (CanvasDrawingSession ds = _canvasSource.CreateDrawingSession(Colors.Black))
+      {
+        ds.FillRectangle(20, 30, 5, 6, Colors.Blue);
+      }
     }
 
-    public async Task LoadDicomFile_Click()
+    private void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
+    {
+      var size = new Size(sender.ActualHeight, sender.ActualWidth);
+      _editor.RenderChart(_rangeValue, size, args.DrawingSession);
+    }
+
+    private async void loadDicomFileAsync()
     {
       await _editor.LoadDicomFileAsync();
       ContentTitle = _editor.StorageFile.DisplayName;
@@ -91,129 +131,13 @@ namespace ChartInUWP
       ImageProgressing = false;
     }
 
-    //public async Task LoadPackedFile_Click()
-    //{
-    //  await _editor.LoadChartDataAsync();
-    //  //_canvasControl.Invalidate();
-    //}
-
-    public async Task LoadChartData_Click()
+    private async void loadChartDataAsync()
     {
       ChartProgressing = true;
       await _editor.LoadChartDataAsync();
-      NumberOfRows = _editor.NumberOfRows;
-      _canvasControl.Invalidate();
+      SliderRangeMaximum = _editor.NumberOfRows;
       ChartProgressing = false;
     }
-
-    #endregion Events
-
-    #region Methods
-
-    //private void GraphMoveY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphMoveYIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphMoveY.Value < GraphMoveY.Maximum)
-    //  {
-    //    GraphMoveY.Value++; 
-    //  }
-    //}
-
-    //private void GraphMoveYDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphMoveY.Value)
-    //  {
-    //    GraphMoveY.Value--;
-    //  }
-    //}
-
-    //private void GraphScaleY_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphScaleYDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphScaleY.Value)
-    //  {
-    //    GraphScaleY.Value--;
-    //  }
-    //}
-
-    //private void GraphScaleYIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphScaleY.Value < GraphScaleY.Maximum)
-    //  {
-    //    GraphScaleY.Value++;
-    //  }
-    //}
-
-    //private void GraphScaleX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  var x = e.NewValue;
-
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphScaleXIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphScaleX.Value < GraphScaleX.Maximum)
-    //  {
-    //    GraphScaleX.Value++;
-    //  }
-    //}
-
-    //private void GraphScaleXDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphScaleX.Value)
-    //  {
-    //    GraphScaleX.Value--;
-    //  }
-    //}
-
-    //private void GraphMoveX_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    //{
-    //  GraphCanvas.Invalidate();
-    //}
-
-    //private void GraphMoveXIncrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (GraphMoveX.Value < GraphMoveX.Maximum)
-    //  {
-    //    GraphMoveX.Value++;
-    //  }
-    //}
-
-    //private void GraphMoveXDecrease_Click(object sender, RoutedEventArgs e)
-    //{
-    //  if (0 < GraphMoveX.Value)
-    //  {
-    //    GraphMoveX.Value--;
-    //  }
-    //}
-
-    //private async void LoadDataButton_Click(object sender, RoutedEventArgs e)
-    //{
-    //  GraphCanvas.Visibility = Visibility.Visible;
-    //  GreyImageGrid.Visibility = Visibility.Collapsed;
-    //  await viewModel.LoadChartMatrixFile();
-    //  //await ReadBinaryData();
-    //  //await ReadInputData();
-    //}
-
-    //private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
-    //{
-    //  GraphCanvas.Visibility = Visibility.Collapsed;
-    //  GreyImageGrid.Visibility = Visibility.Visible;
-    //  await viewModel.RenderRawImage();
-    //  //await RenderRawImage();
-    //}
-
-
 
     #endregion Methods
   }
