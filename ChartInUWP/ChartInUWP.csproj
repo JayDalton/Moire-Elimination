@@ -106,6 +106,7 @@
     <Compile Include="Models\MatrixHelper.cs" />
     <Compile Include="Models\MatrixStruct.cs" />
     <Compile Include="ModelServices\ChartService.cs" />
+    <Compile Include="ProgramLogics\AbstractImageEditor.cs" />
     <Compile Include="ProgramLogics\ImageEditor.cs" />
     <Compile Include="Models\DicomModel.cs" />
     <Compile Include="Models\ImageModel.cs" />

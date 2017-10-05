@@ -8,6 +8,10 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP.Models
 {
+  /// <summary>
+  /// Hält eine File-Quelle von Pixeldaten bereit, 
+  /// unterstützt
+  /// </summary>
   public interface IPixelDataSource
   {
     bool ContainsData();

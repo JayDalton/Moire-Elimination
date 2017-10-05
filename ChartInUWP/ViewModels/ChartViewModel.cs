@@ -29,12 +29,12 @@ namespace ChartInUWP.ViewModels
 
       if (DesignMode.DesignModeEnabled)
       {
-        
-        ContentTitle = "Design Mode";
+
+        ImageDisplayName = "Design Mode";
       }
       else
       {
-        ContentTitle = "Datei xyz; rows: ... cols: ...";
+        ImageDisplayName = "Datei xyz; rows: ... cols: ...";
       }
     }
 
@@ -55,7 +55,7 @@ namespace ChartInUWP.ViewModels
     }
 
     string _contentTitle;
-    public string ContentTitle
+    public string ImageDisplayName
     {
       get { return _contentTitle; }
       set { SetProperty(ref _contentTitle, value); }
@@ -82,8 +82,8 @@ namespace ChartInUWP.ViewModels
       set { SetProperty(ref _rangeMaximum, value); }
     }
 
-    double _rangeValue = default;
-    public double SlideRangeValue
+    float _rangeValue = default;
+    public float SliderRangeValue
     {
       get { return _rangeValue; }
       set
@@ -91,6 +91,7 @@ namespace ChartInUWP.ViewModels
         if (SetProperty(ref _rangeValue, value))
         {
           Debug.WriteLine(value);
+          RenderTest((int)value);
           //_canvasControl.Invalidate();
         }
       }
@@ -100,20 +101,43 @@ namespace ChartInUWP.ViewModels
 
     #region Commands
 
-    public ICommand LoadDicomFileCommand => new ActionCommand(loadDicomFileAsync);
-    public ICommand LoadChartDataCommand => new ActionCommand(loadChartDataAsync);
-    public ICommand LoadChartLineCommand => new ActionCommand(RenderTest);
+    public ICommand LoadDicomCommand => new DelegateCommand(async () => {
+      await _editor.LoadDicomFileAsync();
+      ImageProgressing = true;
+      ImageDisplayName = _editor.StorageFile.DisplayName;
+      ImageSource = await _editor.GetImageSourceAsync();
+      ImageProgressing = false;
+    });
+
+    public ICommand AnalyzingCommand => new DelegateCommand(async () => {
+      ChartProgressing = true;
+      await _editor.LoadChartDataAsync();
+      CanvasSource = await _editor.GetCanvasSourceAsync();
+      SliderRangeMaximum = _editor.NumberOfRows;
+      _editor.RenderChartLine(0);
+      ChartProgressing = false;
+    });
+
+    public ICommand FilteringCommand => new ActionCommand(Test);
+    public ICommand SaveDicomCommand => new ActionCommand(Test);
+    public ICommand NextLineCommand => new ActionCommand(Test);
 
     #endregion Commands
 
     #region Methods
 
-    private void RenderTest()
+    private void Test()
     {
-      using (CanvasDrawingSession ds = _canvasSource.CreateDrawingSession(Colors.Black))
-      {
-        ds.FillRectangle(20, 30, 5, 6, Colors.Blue);
-      }
+
+    }
+
+    private void RenderTest(int line)
+    {
+      _editor.RenderChartLine(line);
+      //using (CanvasDrawingSession ds = _canvasSource.CreateDrawingSession(Colors.Black))
+      //{
+      //  ds.FillRectangle(20 + line, 30 + line, 5, 6, Colors.Blue);
+      //}
     }
 
     private void RenderChartCanvas(CanvasControl sender, CanvasDrawEventArgs args)
@@ -122,22 +146,22 @@ namespace ChartInUWP.ViewModels
       _editor.RenderChart(_rangeValue, size, args.DrawingSession);
     }
 
-    private async void loadDicomFileAsync()
-    {
-      await _editor.LoadDicomFileAsync();
-      ContentTitle = _editor.StorageFile.DisplayName;
-      ImageProgressing = true;
-      ImageSource = await _editor.GetDicomImageAsync();
-      ImageProgressing = false;
-    }
+    //private async void loadDicomFileAsync()
+    //{
+    //  await _editor.LoadDicomFileAsync();
+    //  ImageDisplayName = _editor.StorageFile.DisplayName;
+    //  ImageProgressing = true;
+    //  ImageSource = await _editor.GetImageSourceAsync();
+    //  ImageProgressing = false;
+    //}
 
-    private async void loadChartDataAsync()
-    {
-      ChartProgressing = true;
-      await _editor.LoadChartDataAsync();
-      SliderRangeMaximum = _editor.NumberOfRows;
-      ChartProgressing = false;
-    }
+    //private async void loadChartDataAsync()
+    //{
+    //  ChartProgressing = true;
+    //  await _editor.LoadChartDataAsync();
+    //  SliderRangeMaximum = _editor.NumberOfRows;
+    //  ChartProgressing = false;
+    //}
 
     #endregion Methods
   }

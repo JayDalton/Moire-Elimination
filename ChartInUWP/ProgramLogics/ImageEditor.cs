@@ -5,9 +5,14 @@ using Windows.Storage;
 using Windows.UI.Xaml.Media;
 using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
+using Microsoft.Graphics.Canvas.UI.Xaml;
+using Windows.UI;
 
 namespace ChartInUWP
 {
+  /// <summary>
+  /// Program logic, holding pixeldata and manage pixelimage and pixelgraph
+  /// </summary>
   public class ImageEditor
   {
     #region Fields
@@ -39,25 +44,71 @@ namespace ChartInUWP
 
     #region Methods
 
+    /// <summary>
+    /// Load a DICOM file
+    /// </summary>
+    /// <returns></returns>
     public async Task LoadDicomFileAsync()
     {
       _inputSource = new DicomModel();
-      if (await _inputSource.OpenFileAsync())
+      if (await _inputSource.OpenFileAsync()) // open
       {
         StorageFile = _inputSource.File;
-        var imgSource = await _inputSource.GetImageSourceAsync();
-        var imgMatrix = await _inputSource.GetPixelDataAsync();
+        //var imgSource = await _inputSource.GetImageSourceAsync();
+        //var imgMatrix = await _inputSource.GetPixelDataAsync();
       }
     }
 
+    /// <summary>
+    /// Load a Image file
+    /// </summary>
+    /// <returns></returns>
     public async Task LoadImageFileAsync()
     {
       _inputSource = new ImageModel();
       if (await _inputSource.OpenFileAsync())
       {
-        var imgSource = await _inputSource.GetImageSourceAsync();
-        var imgMatrix = await _inputSource.GetPixelDataAsync();
+        StorageFile = _inputSource.File;
+        //var imgSource = await _inputSource.GetImageSourceAsync();
+        //var imgMatrix = await _inputSource.GetPixelDataAsync();
       }
+    }
+
+
+    public async Task<ImageSource> GetImageSourceAsync()
+    {
+      return await _inputSource.GetImageSourceAsync();
+    }
+
+    public async Task<CanvasImageSource> GetCanvasSourceAsync()
+    {
+      CanvasDevice device = CanvasDevice.GetSharedDevice();
+      var canvasSource = new CanvasImageSource(device, 300, 300, 96);
+
+      using (CanvasDrawingSession ds = canvasSource.CreateDrawingSession(Colors.Black))
+      {
+        //ds.FillRectangle(20 + _rangeValue, 30 + _rangeValue, 5, 6, Colors.Blue);
+      }
+
+      // todo
+
+      return canvasSource;
+    }
+
+    public async Task LoadChartDataAsync()
+    {
+      var imgMatrix = await _inputSource.GetPixelDataAsync();
+      var fourier = new FourierService(_inputSource);
+      var magnitude = fourier.GetMatrixMagnitude();   // half width
+
+      var renderer = new ChartService(magnitude);
+      //renderer.
+      // todo
+    }
+
+    public void RenderChartLine(int line)
+    {
+
     }
 
     public void RenderChart(double row, Size size, CanvasDrawingSession ds)
@@ -68,28 +119,18 @@ namespace ChartInUWP
       }
     }
 
-    public async Task LoadMatrixFileAsync()
-    {
-      // formats: pgm + MessagePack<matrix>
-    }
+    //public async Task LoadMatrixFileAsync()
+    //{
+    //  // formats: pgm + MessagePack<matrix>
+    //}
 
-    public async Task<ImageSource> GetDicomImageAsync()
-    {
-      return await _inputSource.GetImageSourceAsync();
-    }
-
-    public async Task LoadChartDataAsync()
-    {
-      var imgMatrix = await _inputSource.GetPixelDataAsync();
-    }
-
-    private void handleMatrxToChart(MatrixStruct<ushort> matrix)
-    {
-      var fourier = new FourierService(_inputSource);
-      var magnitude = fourier.GetMatrixMagnitude();   // half width
-      var renderer = new ChartService(magnitude);
-      //renderer
-    }
+    //private void handleMatrxToChart(MatrixStruct<ushort> matrix)
+    //{
+    //  var fourier = new FourierService(_inputSource);
+    //  var magnitude = fourier.GetMatrixMagnitude();   // half width
+    //  var renderer = new ChartService(magnitude);
+    //  //renderer
+    //}
 
     #endregion Methods
   }

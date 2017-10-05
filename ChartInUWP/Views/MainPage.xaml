@@ -13,8 +13,10 @@
 
     <Page.TopAppBar>
         <CommandBar>
-            <AppBarButton Icon="OpenFile" Label="load DICOM" Command="{Binding LoadDicomFileCommand}" />
-            <AppBarButton Icon="OpenLocal" Label="load Chart" Command="{Binding LoadChartDataCommand}" />
+            <AppBarButton Icon="OpenFile" Label="Load File" Command="{Binding LoadDicomCommand}" />
+            <AppBarButton Icon="AddFriend" Label="Analyzing" Command="{Binding AnalyzingCommand}" />
+            <AppBarButton Icon="Read" Label="Filtering" Command="{Binding FilteringCommand}" />
+            <AppBarButton Icon="Save" Label="Save File" Command="{Binding SaveDicomCommand}" />
             <CommandBar.Content>
                 <TextBlock Text="{Binding ContentTitle, Mode=OneWay}" Margin="12,14"/>
             </CommandBar.Content>
@@ -52,7 +54,7 @@
             <Slider 
                 Grid.Row="1" Header="Lines" Margin="0, 10"
                 Maximum="{Binding SliderRangeMaximum, Mode=OneWay}"
-                Value="{Binding SlideRangeValue, Mode=TwoWay}"
+                Value="{Binding SliderRangeValue, Mode=TwoWay}"
                 Orientation="Vertical" IsDirectionReversed="True"/>
 
             <Button 
