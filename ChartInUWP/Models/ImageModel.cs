@@ -72,7 +72,7 @@ namespace ChartInUWP
       return default(ImageSource);
     }
 
-    public async Task<MatrixStruct<ushort>> GetPixelDataAsync()
+    public async Task<MatrixStruct<ushort>> GetPixelShortsAsync()
     {
       if (_decoder != null)
       {
@@ -98,6 +98,11 @@ namespace ChartInUWP
     public async Task LoadImageDataFromFile()
     {
       //await _imageLoader.LoadImageSelection();
+    }
+
+    public Task<MatrixStruct<float>> GetPixelFloatsAsync()
+    {
+      throw new NotImplementedException();
     }
 
     #endregion Methods

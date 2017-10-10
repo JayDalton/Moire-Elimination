@@ -18,6 +18,17 @@ namespace ChartInUWP.Models
     StorageFile File { get; }
     Task<bool> OpenFileAsync();
     Task<ImageSource> GetImageSourceAsync();
-    Task<MatrixStruct<ushort>> GetPixelDataAsync();
+    Task<MatrixStruct<ushort>> GetPixelShortsAsync();
+    Task<MatrixStruct<float>> GetPixelFloatsAsync();
+  }
+
+  public abstract class AbstractBitmapModel
+  {
+    public abstract void GetData();
+
+    public virtual void GetMore()
+    {
+
+    }
   }
 }

@@ -83,39 +83,42 @@ namespace ChartInUWP
     public async Task<CanvasImageSource> GetCanvasSourceAsync()
     {
       CanvasDevice device = CanvasDevice.GetSharedDevice();
-      var canvasSource = new CanvasImageSource(device, 300, 300, 96);
-
-      using (CanvasDrawingSession ds = canvasSource.CreateDrawingSession(Colors.Black))
-      {
-        //ds.FillRectangle(20 + _rangeValue, 30 + _rangeValue, 5, 6, Colors.Blue);
-      }
-
-      // todo
+      var canvasSource = new CanvasImageSource(device, 800, 600, 96);
+      _chartService = new ChartService(canvasSource);
 
       return canvasSource;
     }
 
     public async Task LoadChartDataAsync()
     {
-      var imgMatrix = await _inputSource.GetPixelDataAsync();
-      var fourier = new FourierService(_inputSource);
+      var imgShorts = await _inputSource.GetPixelShortsAsync();
+      var mtxFloats = await _inputSource.GetPixelFloatsAsync();
+      // load float image data
+      var fourier = new FourierService(mtxFloats);
+
+      // load complex numbers
+      // calc fourier lines
+      // get magnitude
+      await fourier.LoadGraphDataAsync();
+
       var magnitude = fourier.GetMatrixMagnitude();   // half width
 
-      var renderer = new ChartService(magnitude);
+      // needs data and drawsession
+      _chartService.LoadChartData(magnitude);
       //renderer.
       // todo
     }
 
     public void RenderChartLine(int line)
     {
-
+      _chartService.RenderChartRow(line);
     }
 
     public void RenderChart(double row, Size size, CanvasDrawingSession ds)
     {
       if (_chartService != null)
       {
-        _chartService.RenderChartRow(row, size, ds);
+        _chartService.RenderChartRow((int)row, size, ds);
       }
     }
 

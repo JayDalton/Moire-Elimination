@@ -111,8 +111,8 @@ namespace ChartInUWP.ViewModels
 
     public ICommand AnalyzingCommand => new DelegateCommand(async () => {
       ChartProgressing = true;
-      await _editor.LoadChartDataAsync();
       CanvasSource = await _editor.GetCanvasSourceAsync();
+      await _editor.LoadChartDataAsync();
       SliderRangeMaximum = _editor.NumberOfRows;
       _editor.RenderChartLine(0);
       ChartProgressing = false;

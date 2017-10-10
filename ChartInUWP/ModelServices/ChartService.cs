@@ -14,42 +14,61 @@ using Windows.UI;
 
 namespace ChartInUWP
 {
-  public class ChartService : MatrixStruct<float>
+  public class ChartService
   {
     #region Fields
 
     bool renderArea = false;
     float DataStrokeThickness = 1;
+    MatrixStruct<float> _content;
     Color DataStrokeColor = Colors.Black;
+    CanvasImageSource _canvasImageSource;
 
     #endregion Fields
 
-    public ChartService(MatrixStruct<float> matrix) : base(matrix)
+    public ChartService(CanvasImageSource canvasSource)
     {
-
+      _canvasImageSource = canvasSource;
+      using (CanvasDrawingSession ds = canvasSource.CreateDrawingSession(Colors.Black))
+      {
+        ds.FillRectangle(20 , 30 , 5, 6, Colors.Blue);
+      }
     }
 
     #region Properties
 
-    public ushort DataRows { get { return base.rows; } }
-    public ushort DataCols { get { return base.cols; } }
-    public float DataMinimum { get { return base.data.Min(); } }
-    public float DataMaximum { get { return base.data.Max(); } }
+    public ushort DataRows { get { return _content.rows; } }
+    public ushort DataCols { get { return _content.cols; } }
+    public float DataMinimum { get { return _content.data.Min(); } }
+    public float DataMaximum { get { return _content.data.Max(); } }
 
     #endregion Properties
 
     #region Methods
 
-    public void RenderChartRow(double row, Size size, CanvasDrawingSession session)
+    public void LoadChartData(MatrixStruct<float> content)
+    {
+      _content = content;
+    }
+
+    public void RenderChartRow(int line)
+    {
+      using (var ds = _canvasImageSource.CreateDrawingSession(Colors.White))
+      {
+        RenderChartRow(line, _canvasImageSource.Size, ds);
+      }
+    }
+
+    public void RenderChartRow(int row, Size size, CanvasDrawingSession session)
     {
       session.Clear(Colors.White);
 
-      if (row < base.rows)
+      if (row < _content.rows)
       {
         var globalMin = DataMinimum;
         var globalMax = DataMaximum;
 
-        var values = base.GetRowSkip((int)row);
+        var values = _content.GetRowSkip((int)row);
 
         RenderData(size, session, values.ToArray());
       }

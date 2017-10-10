@@ -9,22 +9,35 @@ using System.Numerics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace ChartInUWP.ModelServices
 {
+  /// <summary>
+  /// Holds the image data as float array and offers 
+  /// calculation along magnitudes and filtering
+  /// </summary>
+  /// <typeparam name="T"></typeparam>
   public class FourierService
   {
     #region Fields
 
-    IPixelDataSource _source;
+    MatrixStruct<float> _source;
+    MatrixStruct<Complex32> _complex;
     ConcurrentDictionary<int, float[]> _magnitude;
+    ConcurrentDictionary<int, Complex32[]> _transform;
 
     #endregion
 
-    public FourierService(IPixelDataSource source)
+    public FourierService(MatrixStruct<float> source)
     {
       _source = source;
-      _magnitude = new ConcurrentDictionary<int, float[]>();
+      _complex = new MatrixStruct<Complex32>
+      {
+        rows = source.rows,
+        cols = source.cols,
+        data = source.data.Select(v => new Complex32(v, 0)).ToArray()
+      };
     }
 
     #region Properties
@@ -38,62 +51,74 @@ namespace ChartInUWP.ModelServices
 
     #region Methods
 
-    void LoadPixelDataAsync()
-    {
-    }
-
-    public float[] GetRow(int row)
-    {
-      return new float[0];
-    }
+    //public async Task LoadPixelDataAsync(IPixelDataSource source)
+    //{
+    //  var complex = _source.data
+    //    .Select(v => new Complex32(v, 0))
+    //    .Split(DataRows)
+    //    //.ToArray()
+    //    ;
+    //}
 
     public async Task LoadGraphDataAsync()
     {
-      if (_source != null && _source.ContainsData())
+      if (_complex.data.Length > 0)
       {
         var sw = Stopwatch.StartNew();
-        var pixelData = await _source.GetPixelDataAsync();
-        var complex = pixelData.data
-          .Select(Convert.ToSingle)
-          .Select(v => v * (1.0f / ushort.MaxValue))
-          .Select(v => new Complex32(v, 0))
-          .Split(DataRows)
-          .Where(v => v.Count() % 2 == 0)
-          //.ToArray()
-          ;
 
-          // perform ffts
-          _magnitude = new ConcurrentDictionary<int, float[]>();
-          //var _magnitude2 = new BlockingCollection<float[]>();
-          await Task.Run(() => {
-            var rows = pixelData.rows;
-            var cols = pixelData.cols;
-            //Parallel.ForEach(complex, options, row => {
-            //  var oneLine = row.ToArray();
-            //  Fourier.Forward(oneLine, FourierOptions.Default);
-            //  //_magnitude.TryAdd(row, oneLine.Select(c => c.Magnitude).ToArray());
-            //  _magnitude2.Add(oneLine.Select(c => c.Magnitude).ToArray());
-            //});
-
-            Parallel.For(0, rows, row =>
-            {
-              //var oneLine = complex[row].ToArray();
-              //var oneLine = complex.Skip(row * cols).Take(DataCols).ToArray();
-              //Fourier.Forward(oneLine, FourierOptions.Default);
-              //_magnitude.TryAdd(row, oneLine.Select(c => c.Magnitude).ToArray());
-            });
+        // perform ffts
+        _transform = new ConcurrentDictionary<int, Complex32[]>();
+        _magnitude = new ConcurrentDictionary<int, float[]>();
+        //var _magnitude2 = new BlockingCollection<float[]>();
+        await Task.Run(() => {
+          var rows = _complex.rows;
+          var cols = _complex.cols;
+          var options = new ParallelOptions() { MaxDegreeOfParallelism = 2 };
+          Parallel.For(0, rows, options, row =>
+          {
+            var oneLine = _complex.data.Skip(row * cols).Take(cols).ToArray();
+            Fourier.Forward(oneLine, FourierOptions.Default);
+            _transform.TryAdd(row, oneLine);
+            _magnitude.TryAdd(row, oneLine.Select(c => c.Magnitude).ToArray());
           });
-          sw.Stop();
-          Debug.WriteLine(" : " + sw.ElapsedMilliseconds);
-          //GlobalMaxValue = 4000;
-          //var complex = Samples.Select(v => new Complex32(v, 0)).ToArray();
-          //var x = _magnitude.OrderBy(v => v.Key);// Samples.Max();
+
+          //Parallel.ForEach(_complex.data.Split(cols), options, row =>
+          //{
+          //  var oneLine = row.ToArray();
+          //  Fourier.Forward(oneLine, FourierOptions.Default);
+          //  //_magnitude.TryAdd(row, oneLine.Select(c => c.Magnitude).ToArray());
+          //  _magnitude.TryAdd(oneLine.Select(c => c.Magnitude).ToArray());
+          //});
+
+          //long total = 0;
+          //Parallel.For<long>(0, rows, () => 0, 
+          //  (j, loop, subtotal) => {
+          //    return 0;
+          //  }, 
+          //  (x) => Interlocked.Add(ref total, x)
+          //);
+        });
+        sw.Stop();
+        Debug.WriteLine(" : " + sw.ElapsedMilliseconds);
+        //GlobalMaxValue = 4000;
+        //var complex = Samples.Select(v => new Complex32(v, 0)).ToArray();
+        //var x = _magnitude.OrderBy(v => v.Key);// Samples.Max();
       }
     }
 
+    /// <summary>
+    /// Calculates magnitude
+    /// </summary>
+    /// <returns>
+    /// Returns half size magnitude
+    /// </returns>
     public MatrixStruct<float> GetMatrixMagnitude()
     {
-      return default(MatrixStruct<float>);
+      return new MatrixStruct<float>() {
+        rows = (ushort)_magnitude.Count,
+        cols = (ushort)_magnitude[0].Length,
+        data = _magnitude.Values.SelectMany(i => i).ToArray(),
+      };
     }
 
     #endregion Methods

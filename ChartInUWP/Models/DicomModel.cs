@@ -97,7 +97,7 @@ namespace ChartInUWP
       return default(ImageSource);
     }
 
-    public async Task<MatrixStruct<ushort>> GetPixelDataAsync()
+    public async Task<MatrixStruct<ushort>> GetPixelShortsAsync()
     {
       return await Task.Run(() => {
         if (ContainsData())
@@ -114,7 +114,32 @@ namespace ChartInUWP
             };
           }
         }
-        return default(MatrixStruct<ushort>);
+        return default;
+      });
+    }
+
+    public async Task<MatrixStruct<float>> GetPixelFloatsAsync()
+    {
+      return await Task.Run(() => {
+        if (ContainsData())
+        {
+          var header = DicomPixelData.Create(_dicomFile.Dataset);
+          var pixelData = PixelDataFactory.Create(header, 0);
+          if (pixelData is GrayscalePixelDataU16)
+          {
+            return new MatrixStruct<float>
+            {
+              rows = header.Height,
+              cols = header.Width,
+              data = 
+                (pixelData as GrayscalePixelDataU16).Data
+                .Select(Convert.ToSingle)
+                .Select(v => v * (1.0f / ushort.MaxValue))
+                .ToArray()
+            };
+          }
+        }
+        return default;
       });
     }
 
