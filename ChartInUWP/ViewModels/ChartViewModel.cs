@@ -16,7 +16,7 @@ namespace ChartInUWP.ViewModels
   {
     #region Fields
 
-    ImageEditor _editor;
+      ImageEditor _editor;
 
     #endregion Fields
 
