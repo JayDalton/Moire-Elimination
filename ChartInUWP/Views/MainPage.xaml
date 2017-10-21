@@ -18,7 +18,7 @@
             <AppBarButton Icon="Read" Label="Filtering" Command="{Binding FilteringCommand}" />
             <AppBarButton Icon="Save" Label="Save File" Command="{Binding SaveDicomCommand}" />
             <CommandBar.Content>
-                <TextBlock Text="{Binding ContentTitle, Mode=OneWay}" Margin="12,14"/>
+                <TextBlock Text="{Binding ImageDisplayName, Mode=OneWay}" Margin="12,14"/>
             </CommandBar.Content>
         </CommandBar>
     </Page.TopAppBar>
@@ -47,18 +47,19 @@
             </Grid.RowDefinitions>
 
             <Button 
-                Grid.Row="0" Command="{Binding LoadChartLineCommand}" HorizontalAlignment="Stretch">
+                Grid.Row="0" Command="{Binding PrevLineCommand}" HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
 
-            <Slider 
-                Grid.Row="1" Header="Lines" Margin="0, 10"
-                Maximum="{Binding SliderRangeMaximum, Mode=OneWay}"
+            <Slider  
+                Grid.Row="1" Header="Lines" Margin="0, 10" x:Name="slider"
+                Minimum="{Binding SliderRangeMinimum, Mode=OneWay}"
                 Value="{Binding SliderRangeValue, Mode=TwoWay}"
+                Maximum="{Binding SliderRangeMaximum, Mode=OneWay}"
                 Orientation="Vertical" IsDirectionReversed="True"/>
 
             <Button 
-                Grid.Row="2" Command="{Binding LoadChartLineCommand}" HorizontalAlignment="Stretch">
+                Grid.Row="2" Command="{Binding NextLineCommand}" HorizontalAlignment="Stretch">
                 <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"/>
             </Button>
         </Grid>

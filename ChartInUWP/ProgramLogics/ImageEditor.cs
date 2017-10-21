@@ -25,16 +25,20 @@ namespace ChartInUWP
 
     public ImageEditor()
     {
-      //_chartService = new ChartService();
+      CanvasDevice device = CanvasDevice.GetSharedDevice();
+      CanvasSource = new CanvasImageSource(device, 800, 600, 96);
+      _chartService = new ChartService(CanvasSource);
     }
 
     #region Properties
 
     public int CurrentRow { get; set; }
 
-    public double NumberOfRows { get { return _chartService.DataRows; } }
+    public double NumberRows { get { return _chartService.DataRows; } }
 
     public ImageSource ImageSource { get; private set; }
+
+    public CanvasImageSource CanvasSource { get; private set; }
 
     public StorageFile StorageFile { get; private set; }
 
@@ -48,45 +52,35 @@ namespace ChartInUWP
     /// Load a DICOM file
     /// </summary>
     /// <returns></returns>
-    public async Task LoadDicomFileAsync()
+    public async Task<string> OpenDicomFileAsync()
     {
       _inputSource = new DicomModel();
       if (await _inputSource.OpenFileAsync()) // open
       {
         StorageFile = _inputSource.File;
-        //var imgSource = await _inputSource.GetImageSourceAsync();
-        //var imgMatrix = await _inputSource.GetPixelDataAsync();
+        return StorageFile.DisplayName;
       }
+      return default;
     }
 
     /// <summary>
     /// Load a Image file
     /// </summary>
     /// <returns></returns>
-    public async Task LoadImageFileAsync()
+    public async Task<string> OpenImageFileAsync()
     {
       _inputSource = new ImageModel();
       if (await _inputSource.OpenFileAsync())
       {
         StorageFile = _inputSource.File;
-        //var imgSource = await _inputSource.GetImageSourceAsync();
-        //var imgMatrix = await _inputSource.GetPixelDataAsync();
+        return StorageFile.DisplayName;
       }
+      return default;
     }
-
 
     public async Task<ImageSource> GetImageSourceAsync()
     {
       return await _inputSource.GetImageSourceAsync();
-    }
-
-    public async Task<CanvasImageSource> GetCanvasSourceAsync()
-    {
-      CanvasDevice device = CanvasDevice.GetSharedDevice();
-      var canvasSource = new CanvasImageSource(device, 800, 600, 96);
-      _chartService = new ChartService(canvasSource);
-
-      return canvasSource;
     }
 
     public async Task LoadChartDataAsync()

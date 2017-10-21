@@ -23,16 +23,20 @@ namespace ChartInUWP
     MatrixStruct<float> _content;
     Color DataStrokeColor = Colors.Black;
     CanvasImageSource _canvasImageSource;
+    CanvasDrawingSession _drawingSession;
 
     #endregion Fields
 
     public ChartService(CanvasImageSource canvasSource)
     {
+      _content = new MatrixStruct<float>();
       _canvasImageSource = canvasSource;
-      using (CanvasDrawingSession ds = canvasSource.CreateDrawingSession(Colors.Black))
-      {
-        ds.FillRectangle(20 , 30 , 5, 6, Colors.Blue);
-      }
+      _drawingSession = canvasSource.CreateDrawingSession(Colors.Gray);
+      
+      //using (var ds = canvasSource.CreateDrawingSession(Colors.Gray))
+      //{
+      //  ds.Clear(Colors.Black);
+      //}
     }
 
     #region Properties
@@ -53,15 +57,12 @@ namespace ChartInUWP
 
     public void RenderChartRow(int line)
     {
-      using (var ds = _canvasImageSource.CreateDrawingSession(Colors.White))
-      {
-        RenderChartRow(line, _canvasImageSource.Size, ds);
-      }
+      RenderChartRow(line, _canvasImageSource.Size, _drawingSession);
     }
 
     public void RenderChartRow(int row, Size size, CanvasDrawingSession session)
     {
-      session.Clear(Colors.White);
+      session.Clear(Colors.Green);
 
       if (row < _content.rows)
       {

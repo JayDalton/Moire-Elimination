@@ -12,8 +12,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Core;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
@@ -88,13 +90,18 @@ namespace ChartInUWP
 
     public async Task<ImageSource> GetImageSourceAsync()
     {
-      await Task.Delay(0);
+      // refactoring run async dispatcher
       if (ContainsData())
       {
         var dicomImage = new DicomImage(_dicomFile.Dataset);
-        return dicomImage.RenderImage().As<ImageSource>();
+        var source = dicomImage.RenderImage().As<ImageSource>();
+        return source;
       }
-      return default(ImageSource);
+      return default;
+
+      //var dispatcher = CoreApplication.MainView.CoreWindow.Dispatcher;
+      //return await dispatcher.RunAsync(CoreDispatcherPriority.Low, () => {
+      //});
     }
 
     public async Task<MatrixStruct<ushort>> GetPixelShortsAsync()
