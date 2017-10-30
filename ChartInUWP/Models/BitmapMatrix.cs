@@ -1,43 +1,44 @@
-﻿using ChartInUWP.Models;
+﻿using ChartInUWP.Interfaces;
+using ChartInUWP.Models;
 using MessagePack;
 using System.Linq;
 
 namespace ChartInUWP
 {
   [MessagePackObject]
-  public class MatrixStruct<T>
+  public class BitmapMatrix<T> : IImageMatrix<T>
   {
-    public MatrixStruct()
+    public BitmapMatrix()
     {
 
     }
 
-    public MatrixStruct(MatrixStruct<T> mtx)
+    public BitmapMatrix(BitmapMatrix<T> mtx)
     {
-      rows = mtx.rows;
-      cols = mtx.cols;
-      data = mtx.data;
+      Rows = mtx.Rows;
+      Cols = mtx.Cols;
+      Data = mtx.Data;
     }
 
     [Key(0)]
-    public ushort rows { get; set; }
+    public ushort Rows { get; set; }
 
     [Key(1)]
-    public ushort cols { get; set; }
+    public ushort Cols { get; set; }
 
     [Key(2)]
-    public T[] data { get; set; } // IList<short>
+    public T[] Data { get; set; } // IList<short>
 
     public T[] GetRowSkip(int row)
     {
-      var start = row < rows ? row * cols : 0;
-      return data.Skip(start).Take(cols).ToArray();
+      var start = row < Rows ? row * Cols : 0;
+      return Data.Skip(start).Take(Cols).ToArray();
     }
 
     public T[] GetRowCopy(int row)
     {
-      var start = row < rows ? row * cols : 0;
-      return data.SubArray(start, cols);
+      var start = row < Rows ? row * Cols : 0;
+      return Data.SubArray(start, Cols);
     }
 
     // GetRow(2, 20, 15)

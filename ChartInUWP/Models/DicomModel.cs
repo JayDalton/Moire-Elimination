@@ -1,4 +1,5 @@
-﻿using ChartInUWP.Models;
+﻿using ChartInUWP.Interfaces;
+using ChartInUWP.Models;
 using Dicom;
 using Dicom.Imaging;
 using Dicom.Imaging.Render;
@@ -20,11 +21,10 @@ using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP
 {
-  public class DicomModel : IPixelDataSource
+  public class DicomModel : IPixelSource
   {
     #region Fields
 
-    //StorageFile _storageFile;
     DicomFile _dicomFile = new DicomFile();
 
     #endregion Fields
@@ -98,56 +98,86 @@ namespace ChartInUWP
         return source;
       }
       return default;
-
-      //var dispatcher = CoreApplication.MainView.CoreWindow.Dispatcher;
-      //return await dispatcher.RunAsync(CoreDispatcherPriority.Low, () => {
-      //});
     }
 
-    public async Task<MatrixStruct<ushort>> GetPixelShortsAsync()
+    public async Task<BitmapMatrix<ushort>> GetShortsMatrixAsync()
     {
       return await Task.Run(() => {
         if (ContainsData())
         {
           var header = DicomPixelData.Create(_dicomFile.Dataset);
           var pixelData = PixelDataFactory.Create(header, 0);
-          if (pixelData is GrayscalePixelDataU16)
+          return new BitmapMatrix<ushort>
           {
-            return new MatrixStruct<ushort>
-            {
-              rows = header.Height,
-              cols = header.Width,
-              data = (pixelData as GrayscalePixelDataU16).Data
-            };
-          }
+            Rows = header.Height,
+            Cols = header.Width,
+            Data = convertToUShorts(pixelData)
+          };
         }
         return default;
       });
     }
 
-    public async Task<MatrixStruct<float>> GetPixelFloatsAsync()
+    public async Task<BitmapMatrix<float>> GetFloatsMatrixAsync()
     {
       return await Task.Run(() => {
         if (ContainsData())
         {
           var header = DicomPixelData.Create(_dicomFile.Dataset);
           var pixelData = PixelDataFactory.Create(header, 0);
-          if (pixelData is GrayscalePixelDataU16)
+          return new BitmapMatrix<float>
           {
-            return new MatrixStruct<float>
-            {
-              rows = header.Height,
-              cols = header.Width,
-              data = 
-                (pixelData as GrayscalePixelDataU16).Data
-                .Select(Convert.ToSingle)
-                .Select(v => v * (1.0f / ushort.MaxValue))
-                .ToArray()
-            };
-          }
+            Rows = header.Height,
+            Cols = header.Width,
+            Data = convertToFloats(pixelData)
+          };
         }
         return default;
       });
+    }
+
+    private ushort[] convertToUShorts(IPixelData data)
+    {
+      switch (data)
+      {
+        case GrayscalePixelDataU16 temp:
+          return temp.Data;
+
+        default:
+          break;
+      }
+      return default;
+    }
+
+    private float[] convertToFloats(IPixelData data)
+    {
+      switch (data)
+      {
+        case GrayscalePixelDataU16 temp:
+          return temp.Data.Select(Convert.ToSingle).Select(v => v * (1.0f / ushort.MaxValue)).ToArray();
+
+        default:
+          break;
+      }
+      return default;
+    }
+
+    private double[] convertToDoubles(IPixelData data)
+    {
+      switch (data)
+      {
+        case GrayscalePixelDataU16 temp:
+          return temp.Data.Select(Convert.ToSingle).Select(v => v * (1.0 / double.MaxValue)).ToArray();
+
+        default:
+          break;
+      }
+      return default;
+    }
+
+    public IEnumerable<float[]> GetFloatsIterator()
+    {
+      throw new NotImplementedException();
     }
 
     #endregion Methods

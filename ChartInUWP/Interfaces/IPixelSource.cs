@@ -6,20 +6,21 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml.Media;
 
-namespace ChartInUWP.Models
+namespace ChartInUWP.Interfaces
 {
   /// <summary>
   /// Hält eine File-Quelle von Pixeldaten bereit, 
   /// unterstützt
   /// </summary>
-  public interface IPixelDataSource
+  public interface IPixelSource
   {
     bool ContainsData();
     StorageFile File { get; }
     Task<bool> OpenFileAsync();
     Task<ImageSource> GetImageSourceAsync();
-    Task<MatrixStruct<ushort>> GetPixelShortsAsync();
-    Task<MatrixStruct<float>> GetPixelFloatsAsync();
+    IEnumerable<float[]> GetFloatsIterator();
+    Task<BitmapMatrix<ushort>> GetShortsMatrixAsync();
+    Task<BitmapMatrix<float>> GetFloatsMatrixAsync();
   }
 
   public abstract class AbstractBitmapModel

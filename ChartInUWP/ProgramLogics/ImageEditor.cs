@@ -7,6 +7,7 @@ using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI;
+using ChartInUWP.Interfaces;
 
 namespace ChartInUWP
 {
@@ -17,7 +18,7 @@ namespace ChartInUWP
   {
     #region Fields
 
-    IPixelDataSource _inputSource;  // input source
+    IPixelSource _pixelSource;  // pixel source
     ChartService _chartService; // render chart
     FourierService _fourierService;
 
@@ -34,15 +35,15 @@ namespace ChartInUWP
 
     public int CurrentRow { get; set; }
 
-    public double NumberRows { get { return _chartService.DataRows; } }
+    public double NumberRows { get { return _chartService.DataLineCount; } }
+
+    public StorageFile StorageFile { get; private set; }
 
     public ImageSource ImageSource { get; private set; }
 
     public CanvasImageSource CanvasSource { get; private set; }
 
-    public StorageFile StorageFile { get; private set; }
-
-    public MatrixStruct<ushort> ImageMatrix { get; private set; }
+    public BitmapMatrix<ushort> ImageMatrix { get; private set; }
 
     #endregion Properties
 
@@ -54,10 +55,10 @@ namespace ChartInUWP
     /// <returns></returns>
     public async Task<string> OpenDicomFileAsync()
     {
-      _inputSource = new DicomModel();
-      if (await _inputSource.OpenFileAsync()) // open
+      _pixelSource = new DicomModel();
+      if (await _pixelSource.OpenFileAsync()) // open
       {
-        StorageFile = _inputSource.File;
+        StorageFile = _pixelSource.File;
         return StorageFile.DisplayName;
       }
       return default;
@@ -69,10 +70,10 @@ namespace ChartInUWP
     /// <returns></returns>
     public async Task<string> OpenImageFileAsync()
     {
-      _inputSource = new ImageModel();
-      if (await _inputSource.OpenFileAsync())
+      _pixelSource = new ImageModel();
+      if (await _pixelSource.OpenFileAsync())
       {
-        StorageFile = _inputSource.File;
+        StorageFile = _pixelSource.File;
         return StorageFile.DisplayName;
       }
       return default;
@@ -80,27 +81,22 @@ namespace ChartInUWP
 
     public async Task<ImageSource> GetImageSourceAsync()
     {
-      return await _inputSource.GetImageSourceAsync();
+      return await _pixelSource.GetImageSourceAsync();
     }
 
     public async Task LoadChartDataAsync()
     {
-      var imgShorts = await _inputSource.GetPixelShortsAsync();
-      var mtxFloats = await _inputSource.GetPixelFloatsAsync();
-      // load float image data
-      var fourier = new FourierService(mtxFloats);
+      var fourier = new FourierService(_pixelSource);
 
-      // load complex numbers
-      // calc fourier lines
-      // get magnitude
-      await fourier.LoadGraphDataAsync();
+      var adding = Task.Factory.StartNew(() => 
+      {
+        foreach (var (idx, values) in fourier.Magnitudes)
+        {
+          _chartService.AddDataLine(idx, values);
+        }
+      });
 
-      var magnitude = fourier.GetMatrixMagnitude();   // half width
-
-      // needs data and drawsession
-      _chartService.LoadChartData(magnitude);
-      //renderer.
-      // todo
+      await fourier.StartAnalysingAsync();
     }
 
     public void RenderChartLine(int line)

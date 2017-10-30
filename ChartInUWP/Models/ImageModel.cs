@@ -1,4 +1,5 @@
-﻿using ChartInUWP.Models;
+﻿using ChartInUWP.Interfaces;
+using ChartInUWP.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace ChartInUWP
 {
-  public class ImageModel : IPixelDataSource
+  public class ImageModel : IPixelSource
   {
     #region Fields
 
@@ -72,7 +73,7 @@ namespace ChartInUWP
       return default(ImageSource);
     }
 
-    public async Task<MatrixStruct<ushort>> GetPixelShortsAsync()
+    public async Task<BitmapMatrix<ushort>> GetShortsMatrixAsync()
     {
       if (_decoder != null)
       {
@@ -83,16 +84,16 @@ namespace ChartInUWP
           byte[] buffer = pixelData.DetachPixelData();
           Enumerable.Range(0, buffer.Length / 2)
             .Select(idx => BitConverter.ToUInt16(buffer, idx));
-          return new MatrixStruct<ushort>
+          return new BitmapMatrix<ushort>
           {
-            rows = (ushort)bitmap.PixelHeight,
-            cols = (ushort)bitmap.PixelWidth,
-            data = Enumerable.Range(0, buffer.Length / 2)
+            Rows = (ushort)bitmap.PixelHeight,
+            Cols = (ushort)bitmap.PixelWidth,
+            Data = Enumerable.Range(0, buffer.Length / 2)
               .Select(idx => BitConverter.ToUInt16(buffer, idx)).ToArray()
           };
         }
       }
-      return default(MatrixStruct<ushort>);
+      return default(BitmapMatrix<ushort>);
     }
 
     public async Task LoadImageDataFromFile()
@@ -100,7 +101,12 @@ namespace ChartInUWP
       //await _imageLoader.LoadImageSelection();
     }
 
-    public Task<MatrixStruct<float>> GetPixelFloatsAsync()
+    public Task<BitmapMatrix<float>> GetFloatsMatrixAsync()
+    {
+      throw new NotImplementedException();
+    }
+
+    public IEnumerable<float[]> GetFloatsIterator()
     {
       throw new NotImplementedException();
     }

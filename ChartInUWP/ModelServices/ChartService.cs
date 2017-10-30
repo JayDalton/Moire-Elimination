@@ -4,6 +4,7 @@ using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -20,39 +21,44 @@ namespace ChartInUWP
 
     bool renderArea = false;
     float DataStrokeThickness = 1;
-    MatrixStruct<float> _content;
+
     Color DataStrokeColor = Colors.Black;
     CanvasImageSource _canvasImageSource;
     CanvasDrawingSession _drawingSession;
+    BlockingCollection<float[]> _inputPipeline;
+    ConcurrentDictionary<int, float[]> _content;
 
     #endregion Fields
 
     public ChartService(CanvasImageSource canvasSource)
     {
-      _content = new MatrixStruct<float>();
       _canvasImageSource = canvasSource;
       _drawingSession = canvasSource.CreateDrawingSession(Colors.Gray);
-      
-      //using (var ds = canvasSource.CreateDrawingSession(Colors.Gray))
-      //{
-      //  ds.Clear(Colors.Black);
-      //}
+      _content = new ConcurrentDictionary<int, float[]>();
     }
 
     #region Properties
 
-    public ushort DataRows { get { return _content.rows; } }
-    public ushort DataCols { get { return _content.cols; } }
-    public float DataMinimum { get { return _content.data.Min(); } }
-    public float DataMaximum { get { return _content.data.Max(); } }
+    public int DataLineCount => _content.Count;
+    public float DataMinimum { get; private set; } = float.MaxValue;
+    public float DataMaximum { get; private set; } = float.MinValue;
 
     #endregion Properties
 
     #region Methods
 
-    public void LoadChartData(MatrixStruct<float> content)
+    public void ClearValues() => _content.Clear();
+
+    public void AddDataLine(int idx, float[] values)
     {
-      _content = content;
+      DataMaximum = values.Max();
+      DataMinimum = values.Min();
+      _content.TryAdd(idx, values);
+    }
+
+    public void LoadData(BlockingCollection<float[]> input)
+    {
+      _inputPipeline = input;
     }
 
     public void RenderChartRow(int line)
@@ -64,17 +70,26 @@ namespace ChartInUWP
     {
       session.Clear(Colors.Green);
 
-      if (row < _content.rows)
-      {
-        var globalMin = DataMinimum;
-        var globalMax = DataMaximum;
-
-        var values = _content.GetRowSkip((int)row);
-
-        RenderData(size, session, values.ToArray());
-      }
-
       RenderAxes(size, session, 1, 1);
+
+      if (_content.TryGetValue(row, out var line))
+      {
+        //DataMaximum = 2;
+        //DataMinimum = DataMinimum;
+        //var globalMax = DataMaximum;
+
+        RenderData(size, session, line);
+      }
+      else
+      {
+
+      }
+    }
+
+    private void RenderInfo(Size size, CanvasDrawingSession session)
+    {
+      session.Clear(Colors.DarkRed);
+      // text ...
     }
 
     private void RenderData(Size size, CanvasDrawingSession session, float[] values)
