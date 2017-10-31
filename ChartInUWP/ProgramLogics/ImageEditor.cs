@@ -8,6 +8,10 @@ using Windows.Foundation;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI;
 using ChartInUWP.Interfaces;
+using Windows.Graphics.Imaging;
+using Windows.UI.Xaml.Media.Imaging;
+using System.Collections.Concurrent;
+using System;
 
 namespace ChartInUWP
 {
@@ -20,15 +24,17 @@ namespace ChartInUWP
 
     IPixelSource _pixelSource;  // pixel source
     ChartService _chartService; // render chart
-    FourierService _fourierService;
+    ImageService _imageService; // render image
 
     #endregion Fields
 
     public ImageEditor()
     {
       CanvasDevice device = CanvasDevice.GetSharedDevice();
-      CanvasSource = new CanvasImageSource(device, 800, 600, 96);
+      CanvasSource = new CanvasImageSource(device, 800, 800, 96);
+      MatrixSource = new CanvasImageSource(device, 4320, 4320, 96);
       _chartService = new ChartService(CanvasSource);
+      _imageService = new ImageService(MatrixSource);
     }
 
     #region Properties
@@ -42,6 +48,8 @@ namespace ChartInUWP
     public ImageSource ImageSource { get; private set; }
 
     public CanvasImageSource CanvasSource { get; private set; }
+
+    public CanvasImageSource MatrixSource { get; set; }
 
     public BitmapMatrix<ushort> ImageMatrix { get; private set; }
 
@@ -92,7 +100,8 @@ namespace ChartInUWP
       {
         foreach (var (idx, values) in fourier.Magnitudes)
         {
-          _chartService.AddDataLine(idx, values);
+          _chartService.AddLineValues(idx, values);
+          _imageService.AddLineValues(idx, values);
         }
       });
 
@@ -104,13 +113,13 @@ namespace ChartInUWP
       _chartService.RenderChartRow(line);
     }
 
-    public void RenderChart(double row, Size size, CanvasDrawingSession ds)
-    {
-      if (_chartService != null)
-      {
-        _chartService.RenderChartRow((int)row, size, ds);
-      }
-    }
+    //public void RenderChart(double row, Size size, CanvasDrawingSession ds)
+    //{
+    //  if (_chartService != null)
+    //  {
+    //    _chartService.RenderChartRow((int)row, size, ds);
+    //  }
+    //}
 
     //public async Task LoadMatrixFileAsync()
     //{

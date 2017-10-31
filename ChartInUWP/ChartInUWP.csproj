@@ -102,7 +102,9 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Interfaces\IImageMatrix.cs" />
+    <Compile Include="Interfaces\IImageService.cs" />
     <Compile Include="ModelServices\Fft.cs" />
+    <Compile Include="ModelServices\ImageService.cs" />
     <Compile Include="Models\ChartModel.cs" />
     <Compile Include="ModelServices\DSPLib.cs" />
     <Compile Include="ModelServices\FourierService.cs" />

@@ -15,6 +15,8 @@
         <CommandBar>
             <AppBarButton Icon="OpenFile" Label="Load File" Command="{Binding LoadDicomCommand}" />
             <AppBarButton Icon="AddFriend" Label="Analyzing" Command="{Binding AnalyzingCommand}" />
+            <AppBarButton Icon="Preview" Label="Filtering" Command="{Binding DisplayImageCommand}" />
+            <AppBarButton Icon="ShowResults" Label="Save File" Command="{Binding DisplayChartCommand}" />
             <AppBarButton Icon="Read" Label="Filtering" Command="{Binding FilteringCommand}" />
             <AppBarButton Icon="Save" Label="Save File" Command="{Binding SaveDicomCommand}" />
             <CommandBar.Content>
@@ -33,7 +35,8 @@
 
         <Image 
             Grid.Column="0" Stretch="Uniform"
-            Source="{Binding ImageSource, Mode=OneWay}"/>
+            Source="{Binding ImageSource, Mode=OneWay}"
+            Visibility="{Binding ImageVisible, Mode=TwoWay}"/>
 
         <ProgressRing 
             Grid.Column="0" Width="80" Height="80"
@@ -66,7 +69,8 @@
 
         <Image 
             Grid.Column="2" Stretch="Uniform" 
-            Source="{Binding CanvasSource, Mode=OneWay}" />
+            Source="{Binding CanvasSource, Mode=OneWay}"
+            Visibility="{Binding CanvasVisible, Mode=TwoWay}"/>
 
         <ProgressRing 
             Grid.Column="2" Width="80" Height="80"

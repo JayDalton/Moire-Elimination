@@ -8,6 +8,7 @@ using System.Windows.Input;
 using Windows.ApplicationModel;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 
 namespace ChartInUWP.ViewModels
@@ -16,7 +17,7 @@ namespace ChartInUWP.ViewModels
   {
     #region Fields
 
-      ImageEditor _editor;
+    ImageEditor _editor;
 
     #endregion Fields
 
@@ -43,6 +44,22 @@ namespace ChartInUWP.ViewModels
     {
       get { return _canvasSource; }
       set { SetProperty(ref _canvasSource, value); }
+    }
+
+    public int MyProperty { get; set; }
+
+    private bool _imageVisible = true;
+    public bool ImageVisible
+    {
+      get { return _imageVisible; }
+      set { SetProperty(ref _imageVisible, value); }
+    }
+
+    private bool _canvasVisible = true;
+    public bool ChartVisible
+    {
+      get { return _canvasVisible; }
+      set { SetProperty(ref _canvasVisible, value); }
     }
 
     string _contentTitle;
@@ -102,6 +119,9 @@ namespace ChartInUWP.ViewModels
 
     public ICommand PrevLineCommand => new DelegateCommand(RenderPrevLineChart, () => 0 < _editor.CurrentRow);
     public ICommand NextLineCommand => new DelegateCommand(RenderNextLineChart, () => _editor.CurrentRow < _editor.NumberRows);
+
+    public ICommand DisplayImageCommand => new DelegateCommand(() => ImageVisible = ImageVisible ? false : true);
+    public ICommand DisplayChartCommand => new DelegateCommand(() => ChartVisible = ChartVisible ? false : true);
 
     public ICommand FilteringCommand => new ActionCommand(Test);
     public ICommand SaveDicomCommand => new ActionCommand(Test);    

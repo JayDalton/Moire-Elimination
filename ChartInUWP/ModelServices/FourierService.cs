@@ -1,5 +1,6 @@
 ﻿using ChartInUWP.Models;
 using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.IntegralTransforms;
 using System;
 using System.Collections.Concurrent;
@@ -51,8 +52,6 @@ namespace ChartInUWP.ModelServices
     public async Task StartAnalysingAsync()
     {
       var parallel = Environment.ProcessorCount;
-      var sw = Stopwatch.StartNew();
-      var optSize = optimizedSize(4318);
 
       var matrix = await _pixelSource.GetFloatsMatrixAsync();
       var step1 = Task.Factory.StartNew(() => 
@@ -61,13 +60,9 @@ namespace ChartInUWP.ModelServices
         {
           for (int i = 0; i < matrix.Rows; i++)
           {
-            _complex32.Add((
-              i, matrix.Data
-              .Skip(i * matrix.Cols)
-              .Take(matrix.Cols)
-              .Select(v => new Complex32(v, 0))
-              .ToArray())
-            );
+            float[] line = new float[optimizedSize(matrix.Cols)];
+            Array.Copy(matrix.Data.Skip(i * matrix.Cols).Take(matrix.Cols).ToArray(), line, matrix.Cols);
+            _complex32.Add((i, line.Select(v => new Complex32(v, 0)).ToArray()));
           }
         }
         finally { _complex32.CompleteAdding(); }
@@ -79,9 +74,11 @@ namespace ChartInUWP.ModelServices
         {
           foreach (var line in _complex32.GetConsumingEnumerable().AsParallel())
           {
-            Fourier.BluesteinForward(line.Item2, FourierOptions.NoScaling);
-            var magnitudes = line.Item2.Select(c => c.Magnitude).ToArray();
-            _magnitude.Add((line.Item1, magnitudes));
+            Fourier.BluesteinForward(line.Item2, FourierOptions.Default);
+            var magnitudes = line.Item2.Select(c => MathF.Log10(c.Magnitude + 1)).ToArray();
+            //var vec = MathNet.Numerics.LinearAlgebra.Vector<float>.Build;
+            
+            _magnitude.Add((line.Item1, magnitudes.Take(magnitudes.Length / 2 + 1).ToArray()));
           }
         }
         finally { _magnitude.CompleteAdding(); }
@@ -225,11 +222,10 @@ namespace ChartInUWP.ModelServices
     private int optimizedSize(int size)
     {
       // 2, 3, 5
-      while (size % 2 != 0 || size % 3 != 0 || size % 5 != 0)
+      while (size % 2 != 0 && size % 3 != 0 && size % 5 != 0)
       {
         size++;
       }
-
       return size;
     }
 

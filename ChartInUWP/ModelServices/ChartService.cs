@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
 
-namespace ChartInUWP
+namespace ChartInUWP.ModelServices
 {
   public class ChartService
   {
@@ -24,7 +24,7 @@ namespace ChartInUWP
 
     Color DataStrokeColor = Colors.Black;
     CanvasImageSource _canvasImageSource;
-    CanvasDrawingSession _drawingSession;
+    //CanvasDrawingSession _drawingSession;
     BlockingCollection<float[]> _inputPipeline;
     ConcurrentDictionary<int, float[]> _content;
 
@@ -33,8 +33,18 @@ namespace ChartInUWP
     public ChartService(CanvasImageSource canvasSource)
     {
       _canvasImageSource = canvasSource;
-      _drawingSession = canvasSource.CreateDrawingSession(Colors.Gray);
       _content = new ConcurrentDictionary<int, float[]>();
+      //using (var ds = _canvasImageSource.CreateDrawingSession(Colors.LightGray))
+      //{
+      //  var text = "load the image.";
+      //  var size = canvasSource.Size;
+      //  ds.DrawText(text, 
+      //    new Vector2((float)size.Width / 2.0f, (float)size.Height / 2.0f), 
+      //    Colors.DarkRed
+      //  );
+      //}
+      //_drawingSession = _canvasImageSource.CreateDrawingSession(Colors.Gray);
+      //_drawingSession.Flush();
     }
 
     #region Properties
@@ -49,7 +59,7 @@ namespace ChartInUWP
 
     public void ClearValues() => _content.Clear();
 
-    public void AddDataLine(int idx, float[] values)
+    public void AddLineValues(int idx, float[] values)
     {
       DataMaximum = values.Max();
       DataMinimum = values.Min();
@@ -63,7 +73,10 @@ namespace ChartInUWP
 
     public void RenderChartRow(int line)
     {
-      RenderChartRow(line, _canvasImageSource.Size, _drawingSession);
+      using (var session = _canvasImageSource.CreateDrawingSession(Colors.White))
+      {
+        RenderChartRow(line, _canvasImageSource.Size, session);
+      }
     }
 
     public void RenderChartRow(int row, Size size, CanvasDrawingSession session)
@@ -74,45 +87,45 @@ namespace ChartInUWP
 
       if (_content.TryGetValue(row, out var line))
       {
-        //DataMaximum = 2;
-        //DataMinimum = DataMinimum;
-        //var globalMax = DataMaximum;
-
         RenderData(size, session, line);
       }
       else
       {
-
+        RenderInfo(size, session, "row not found...");
       }
     }
 
-    private void RenderInfo(Size size, CanvasDrawingSession session)
+    private void RenderInfo(Size size, CanvasDrawingSession session, string text)
     {
       session.Clear(Colors.DarkRed);
-      // text ...
+      session.DrawText(text, 
+        new Vector2((float)size.Width / 2.0f, (float)size.Height / 2.0f), 
+        Colors.DarkRed
+      );
     }
 
     private void RenderData(Size size, CanvasDrawingSession session, float[] values)
     {
-      if (values.Length == 0) return;
       var canvasWidth = (float)size.Width;
+
       var canvasHeight = (float)size.Height;
       var localMin = values.Min();
       var localMax = values.Max();
-      var scaleY = canvasHeight / localMax;
+      var localAvg = values.Average();
+      var scaleY = canvasHeight / values.Max();
       var scaleX = canvasWidth / values.Length;
 
       using (var cpb = new CanvasPathBuilder(session))
       {
         // first value
-        //cpb.BeginFigure(new Vector2(0, (canvasHeight - values[0] * canvasHeight / localMax)));
-        cpb.BeginFigure(new Vector2(0, values[0] * scaleY));
+        cpb.BeginFigure(new Vector2(0, (canvasHeight - values[0] * scaleY)));
+        //cpb.BeginFigure(new Vector2(0, values[0] * scaleY));
 
         // values
         for (int i = 1; i < values.Length; i++)
         {
-          //cpb.AddLine(new Vector2(i * scaleX, (canvasHeight - values[i] * canvasHeight / localMax)));
-          cpb.AddLine(new Vector2(i * scaleX, values[i] * scaleY));
+          cpb.AddLine(new Vector2(i * scaleX, (canvasHeight - values[i] * scaleY)));
+          //cpb.AddLine(new Vector2(i * scaleX, values[i] * scaleY));
         }
 
         if (renderArea)
