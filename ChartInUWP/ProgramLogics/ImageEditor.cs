@@ -23,6 +23,7 @@ namespace ChartInUWP
     #region Fields
 
     IPixelSource _pixelSource;  // pixel source
+    CanvasDevice _renderDevice; // render device
     ChartService _chartService; // render chart
     ImageService _imageService; // render image
 
@@ -30,28 +31,29 @@ namespace ChartInUWP
 
     public ImageEditor()
     {
-      CanvasDevice device = CanvasDevice.GetSharedDevice();
-      CanvasSource = new CanvasImageSource(device, 800, 800, 96);
-      MatrixSource = new CanvasImageSource(device, 4320, 4320, 96);
-      _chartService = new ChartService(CanvasSource);
-      _imageService = new ImageService(MatrixSource);
+      _renderDevice = CanvasDevice.GetSharedDevice();
+      var pixelSize = _renderDevice.MaximumBitmapSizeInPixels;
+      var cacheSize = _renderDevice.MaximumCacheSize;
+
+      //ChartTarget = new CanvasRenderTarget(_renderDevice, 800, 800, 96);
+      //ImageTarget = new CanvasRenderTarget(_renderDevice, 4320, 4320, 96);
+      //_chartService = new ChartService(ChartTarget);
+      //_imageService = new ImageService(ImageTarget);
     }
 
     #region Properties
 
-    public int CurrentRow { get; set; }
+    public int CurrentRow { get; private set; }
 
-    public double NumberRows { get { return _chartService.DataLineCount; } }
+    public Size StorageSize { get; private set; }
 
     public StorageFile StorageFile { get; private set; }
 
-    public ImageSource ImageSource { get; private set; }
+    public CanvasRenderTarget ImageSource { get; private set; }
 
-    public CanvasImageSource CanvasSource { get; private set; }
+    public CanvasRenderTarget ImageTarget { get; private set; }
 
-    public CanvasImageSource MatrixSource { get; set; }
-
-    public BitmapMatrix<ushort> ImageMatrix { get; private set; }
+    public CanvasRenderTarget ChartTarget { get; private set; }
 
     #endregion Properties
 
@@ -61,35 +63,53 @@ namespace ChartInUWP
     /// Load a DICOM file
     /// </summary>
     /// <returns></returns>
-    public async Task<string> OpenDicomFileAsync()
+    public async Task<bool> OpenDicomFileAsync()
     {
       _pixelSource = new DicomModel();
       if (await _pixelSource.OpenFileAsync()) // open
       {
+        StorageSize = _pixelSource.Size;
         StorageFile = _pixelSource.File;
-        return StorageFile.DisplayName;
+        return true;
       }
-      return default;
+      return false;
     }
 
     /// <summary>
     /// Load a Image file
     /// </summary>
     /// <returns></returns>
-    public async Task<string> OpenImageFileAsync()
+    public async Task<bool> OpenImageFileAsync()
     {
       _pixelSource = new ImageModel();
       if (await _pixelSource.OpenFileAsync())
       {
+        StorageSize = _pixelSource.Size;
         StorageFile = _pixelSource.File;
-        return StorageFile.DisplayName;
+        return true;
       }
-      return default;
+      return false;
     }
 
-    public async Task<ImageSource> GetImageSourceAsync()
+    public async Task LoadImageSourceAsync()
     {
-      return await _pixelSource.GetImageSourceAsync();
+      var image = await _pixelSource.GetBytesMatrixAsync();
+      ImageSource = new CanvasRenderTarget(_renderDevice, image.Cols, image.Rows, 96);
+      _imageService = new ImageService(ImageSource);
+      _imageService.ClearScreen(Colors.Orange);
+    }
+
+    public async Task LoadImageTargetAsync()
+    {
+      var image = await _pixelSource.GetBytesMatrixAsync();
+      ImageTarget = new CanvasRenderTarget(_renderDevice, image.Cols, image.Rows, 96);
+      _imageService = new ImageService(ImageTarget);
+      _imageService.ClearScreen(Colors.Violet);
+    }
+
+    public async Task LoadChartTargetAsync()
+    {
+
     }
 
     public async Task LoadChartDataAsync()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.Storage;
 using Windows.UI.Xaml.Media;
 
@@ -14,13 +15,15 @@ namespace ChartInUWP.Interfaces
   /// </summary>
   public interface IPixelSource
   {
+    Size Size { get; }
     bool ContainsData();
     StorageFile File { get; }
     Task<bool> OpenFileAsync();
     Task<ImageSource> GetImageSourceAsync();
     IEnumerable<float[]> GetFloatsIterator();
-    Task<BitmapMatrix<ushort>> GetShortsMatrixAsync();
+    Task<BitmapMatrix<byte>> GetBytesMatrixAsync();
     Task<BitmapMatrix<float>> GetFloatsMatrixAsync();
+    Task<BitmapMatrix<ushort>> GetShortsMatrixAsync();
   }
 
   public abstract class AbstractBitmapModel

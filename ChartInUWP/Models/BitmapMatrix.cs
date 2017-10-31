@@ -1,6 +1,7 @@
 ﻿using ChartInUWP.Interfaces;
 using ChartInUWP.Models;
 using MessagePack;
+using System;
 using System.Linq;
 
 namespace ChartInUWP
@@ -10,15 +11,23 @@ namespace ChartInUWP
   {
     public BitmapMatrix()
     {
-
     }
 
     public BitmapMatrix(BitmapMatrix<T> mtx)
     {
+      Type = typeof(T);
       Rows = mtx.Rows;
       Cols = mtx.Cols;
       Data = mtx.Data;
     }
+
+    #region Properties
+
+    public int Step { get; set; }     // only for bytes
+
+    public int Size { get; set; }
+
+    public Type Type { get; set; }    // ushort, float, ..
 
     [Key(0)]
     public ushort Rows { get; set; }
@@ -28,6 +37,10 @@ namespace ChartInUWP
 
     [Key(2)]
     public T[] Data { get; set; } // IList<short>
+
+    #endregion Properties
+
+    #region Methods
 
     public T[] GetRowSkip(int row)
     {
@@ -50,5 +63,6 @@ namespace ChartInUWP
       return GetRowSkip(row).Skip(col).Take(len).ToArray();
     }
 
+    #endregion Methods
   }
 }

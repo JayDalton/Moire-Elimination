@@ -32,21 +32,26 @@ namespace ChartInUWP.ViewModels
 
     #region Properties
 
-    ImageSource _imageSource;
-    public ImageSource ImageSource
+    CanvasRenderTarget _imageSource;
+    public CanvasRenderTarget ImageSource
     {
       get { return _imageSource; }
       set { SetProperty(ref _imageSource, value); }
     }
 
-    CanvasImageSource _canvasSource;
-    public CanvasImageSource CanvasSource
+    CanvasRenderTarget _imageTarget;
+    public CanvasRenderTarget ImageTarget
     {
-      get { return _canvasSource; }
-      set { SetProperty(ref _canvasSource, value); }
+      get { return _imageTarget; }
+      set { SetProperty(ref _imageTarget, value); }
     }
 
-    public int MyProperty { get; set; }
+    CanvasRenderTarget _chartTarget;
+    public CanvasRenderTarget ChartTarget
+    {
+      get { return _chartTarget; }
+      set { SetProperty(ref _chartTarget, value); }
+    }
 
     private bool _imageVisible = true;
     public bool ImageVisible
@@ -114,11 +119,11 @@ namespace ChartInUWP.ViewModels
 
     #region Commands
 
-    public ICommand LoadDicomCommand => new DelegateCommand(loadDicomFileAsync);
+    public ICommand LoadDicomCommand => new DelegateCommand(openDicomFileAsync);
     public ICommand AnalyzingCommand => new DelegateCommand(analysingChartAsync);
 
     public ICommand PrevLineCommand => new DelegateCommand(RenderPrevLineChart, () => 0 < _editor.CurrentRow);
-    public ICommand NextLineCommand => new DelegateCommand(RenderNextLineChart, () => _editor.CurrentRow < _editor.NumberRows);
+    public ICommand NextLineCommand => new DelegateCommand(RenderNextLineChart, () => _editor.CurrentRow < _editor.StorageSize.Height);
 
     public ICommand DisplayImageCommand => new DelegateCommand(() => ImageVisible = ImageVisible ? false : true);
     public ICommand DisplayChartCommand => new DelegateCommand(() => ChartVisible = ChartVisible ? false : true);
@@ -144,7 +149,7 @@ namespace ChartInUWP.ViewModels
 
     private void RenderNextLineChart()
     {
-      if (_editor.CurrentRow < _editor.NumberRows)
+      if (_editor.CurrentRow < _editor.StorageSize.Height)
       {
         _editor.RenderChartLine(_editor.CurrentRow + 1);
       }
@@ -152,24 +157,41 @@ namespace ChartInUWP.ViewModels
 
     private void RenderThisLineChart(int line)
     {
-      if (0 <= line && line < _editor.NumberRows)
+      if (0 <= line && line < _editor.StorageSize.Height)
       {
         _editor.RenderChartLine(line);
       }
     }
 
-    private async void loadDicomFileAsync()
+    private async void openDicomFileAsync()
     {
-      ImageDisplayName = await _editor.OpenDicomFileAsync();
-      ImageProgressing = true;
-      ImageSource = await _editor.GetImageSourceAsync();
-      CanvasSource = _editor.CanvasSource;
-      ImageProgressing = false;
+      if (await _editor.OpenDicomFileAsync())
+      {
+        ImageDisplayName = $"{_editor.StorageFile.DisplayName} ({_editor.StorageSize})";
+        ImageProgressing = true;
+        await _editor.LoadImageSourceAsync();
+        //await _editor.LoadChartTargetAsync();
+        ImageProgressing = false;
+        ImageSource = _editor.ImageSource;
+        //ImageTarget = _editor.ImageTarget;
+      }
+    }
+
+    private async void openImageFileAsync()
+    {
+      if (await _editor.OpenImageFileAsync())
+      {
+        ImageDisplayName = _editor.StorageFile.DisplayName;
+        ImageProgressing = true;
+        await _editor.LoadImageSourceAsync();
+        ImageProgressing = false;
+        ImageTarget = _editor.ImageTarget;
+      }
     }
 
     private async void analysingChartAsync()
     {
-      CanvasSource = _editor.CanvasSource;
+      ChartTarget = _editor.ChartTarget;
 
       ChartProgressing = true;
       await _editor.LoadChartDataAsync();

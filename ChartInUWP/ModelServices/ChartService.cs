@@ -1,4 +1,5 @@
-﻿using Microsoft.Graphics.Canvas;
+﻿using ChartInUWP.Interfaces;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
@@ -15,7 +16,7 @@ using Windows.UI;
 
 namespace ChartInUWP.ModelServices
 {
-  public class ChartService
+  public class ChartService : IImageService
   {
     #region Fields
 
@@ -23,28 +24,16 @@ namespace ChartInUWP.ModelServices
     float DataStrokeThickness = 1;
 
     Color DataStrokeColor = Colors.Black;
-    CanvasImageSource _canvasImageSource;
-    //CanvasDrawingSession _drawingSession;
+    CanvasRenderTarget _canvasImageSource;
     BlockingCollection<float[]> _inputPipeline;
     ConcurrentDictionary<int, float[]> _content;
 
     #endregion Fields
 
-    public ChartService(CanvasImageSource canvasSource)
+    public ChartService(CanvasRenderTarget renderTarget)
     {
-      _canvasImageSource = canvasSource;
+      _canvasImageSource = renderTarget;
       _content = new ConcurrentDictionary<int, float[]>();
-      //using (var ds = _canvasImageSource.CreateDrawingSession(Colors.LightGray))
-      //{
-      //  var text = "load the image.";
-      //  var size = canvasSource.Size;
-      //  ds.DrawText(text, 
-      //    new Vector2((float)size.Width / 2.0f, (float)size.Height / 2.0f), 
-      //    Colors.DarkRed
-      //  );
-      //}
-      //_drawingSession = _canvasImageSource.CreateDrawingSession(Colors.Gray);
-      //_drawingSession.Flush();
     }
 
     #region Properties
@@ -58,6 +47,14 @@ namespace ChartInUWP.ModelServices
     #region Methods
 
     public void ClearValues() => _content.Clear();
+
+    public void ClearScreen(Color color)
+    {
+      using (var ds = _canvasImageSource.CreateDrawingSession())
+      {
+        ds.Clear(color);
+      }
+    }
 
     public void AddLineValues(int idx, float[] values)
     {
@@ -73,25 +70,20 @@ namespace ChartInUWP.ModelServices
 
     public void RenderChartRow(int line)
     {
-      using (var session = _canvasImageSource.CreateDrawingSession(Colors.White))
+      using (var session = _canvasImageSource.CreateDrawingSession())
       {
+        session.Clear(Colors.White);
         RenderChartRow(line, _canvasImageSource.Size, session);
       }
     }
 
     public void RenderChartRow(int row, Size size, CanvasDrawingSession session)
     {
-      session.Clear(Colors.Green);
-
       RenderAxes(size, session, 1, 1);
 
       if (_content.TryGetValue(row, out var line))
       {
         RenderData(size, session, line);
-      }
-      else
-      {
-        RenderInfo(size, session, "row not found...");
       }
     }
 

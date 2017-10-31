@@ -18,43 +18,54 @@ namespace ChartInUWP.ModelServices
   {
     #region Fields
 
-    CanvasImageSource _canvasImageSource;
-    ConcurrentDictionary<int, float[]> _imageLines;
+    CanvasRenderTarget _canvasRenderTarget;
+    ConcurrentDictionary<int, float[]> _content;
 
     #endregion Fields
 
-    public ImageService(CanvasImageSource canvasSource)
+    public ImageService(CanvasRenderTarget renderTarget)
     {
-      _canvasImageSource = canvasSource;
-      _imageLines = new ConcurrentDictionary<int, float[]>();
+      _canvasRenderTarget = renderTarget;
+      _content = new ConcurrentDictionary<int, float[]>();
     }
 
     #region Methods
 
+    public void ClearValues() => _content.Clear();
+
     public void AddLineValues(int line, float[] values)
     {
-      _imageLines.TryAdd(line, values);
+      _content.TryAdd(line, values);
+    }
+
+    public void ClearScreen(Color color)
+    {
+      using (var session = _canvasRenderTarget.CreateDrawingSession())
+      {
+        session.Clear(color);
+      }
     }
 
     public async Task Render()
     {
-      using (var session = _canvasImageSource.CreateDrawingSession(Colors.White))
+      using (var session = _canvasRenderTarget.CreateDrawingSession())
       {
-        await CreateBitmap(session, _canvasImageSource.Size);
+        session.Clear(Colors.Gray);
+        await CreateBitmap(session, _canvasRenderTarget.Size);
       }
     }
 
     public async Task CreateBitmap(CanvasDrawingSession session, Size size)
     {
-      if (0 < _imageLines.Count)
+      if (0 < _content.Count)
       {
         using (var stream = new InMemoryRandomAccessStream())
         {
           using (var writer = new DataWriter(stream))
           {
-            foreach (var key in _imageLines.Keys.OrderBy(k => k))
+            foreach (var key in _content.Keys.OrderBy(k => k))
             {
-              if (_imageLines.TryGetValue(key, out var line))
+              if (_content.TryGetValue(key, out var line))
               {
                 line.ToList().ForEach(v => writer.WriteSingle(v));
               }
@@ -71,12 +82,18 @@ namespace ChartInUWP.ModelServices
             reader.ReadBytes(bytes);
 
             var bitmap = CanvasBitmap.CreateFromBytes(
-              _canvasImageSource.Device, bytes, 10, 10, 
+              _canvasRenderTarget.Device, bytes, 10, 10, 
               Windows.Graphics.DirectX.DirectXPixelFormat.A8UIntNormalized
             );
 
-            using (var ds = _canvasImageSource.CreateDrawingSession(Colors.Gray))
+            CanvasRenderTarget crt = new CanvasRenderTarget(_canvasRenderTarget.Device, 100, 100, 96);
+
+            //crt.SetPixelBytes();
+
+            using (var ds = _canvasRenderTarget.CreateDrawingSession())
             {
+              ds.Clear(Colors.Gray);
+              ds.DrawImage(crt);
               ds.DrawImage(bitmap);
             }
           }

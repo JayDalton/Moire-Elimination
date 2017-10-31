@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
+using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Core;
@@ -33,6 +34,8 @@ namespace ChartInUWP
 
     #region Properties
 
+    public Size Size { get; set; }
+
     public StorageFile File { get; private set; }
 
     #endregion Properties
@@ -51,32 +54,19 @@ namespace ChartInUWP
       picker.FileTypeFilter.Add(".dic");
 
       File = await picker.PickSingleFileAsync();
+      return await OpenFileAsync(File);
+    }
+
+    public async Task<bool> OpenFileAsync(StorageFile file)
+    {
       if (File != null)
       {
         try
         {
           var stream = await File.OpenStreamForReadAsync();
           _dicomFile = await DicomFile.OpenAsync(stream);
-          return true;
-        }
-        catch (Exception ex)
-        {
-          Debug.WriteLine(ex.Message);
-          throw;
-        }
-      }
-      return false;
-    }
-
-    public async Task<bool> OpenFileAsync(StorageFile file)
-    {
-      if (file != null)
-      {
-        try
-        {
-          File = file;
-          var stream = await File.OpenStreamForReadAsync();
-          _dicomFile = await DicomFile.OpenAsync(stream);
+          var header = DicomPixelData.Create(_dicomFile.Dataset);
+          Size = new Size(header.Width, header.Height);
           return true;
         }
         catch (Exception ex)
@@ -100,6 +90,27 @@ namespace ChartInUWP
       return default;
     }
 
+    public async Task<BitmapMatrix<byte>> GetBytesMatrixAsync()
+    {
+      return await Task.Run(() => {
+        if (ContainsData())
+        {
+          var header = DicomPixelData.Create(_dicomFile.Dataset);
+          var pixelData = PixelDataFactory.Create(header, 0);
+          return new BitmapMatrix<byte>
+          {
+            Step = 1,
+            Type = typeof(byte),
+            Rows = header.Height,
+            Cols = header.Width,
+            Data = convertToBytes(pixelData),
+            Size = 1,
+          };
+        }
+        return default;
+      });
+    }
+
     public async Task<BitmapMatrix<ushort>> GetShortsMatrixAsync()
     {
       return await Task.Run(() => {
@@ -109,6 +120,7 @@ namespace ChartInUWP
           var pixelData = PixelDataFactory.Create(header, 0);
           return new BitmapMatrix<ushort>
           {
+            Type = typeof(ushort),
             Rows = header.Height,
             Cols = header.Width,
             Data = convertToUShorts(pixelData)
@@ -127,6 +139,7 @@ namespace ChartInUWP
           var pixelData = PixelDataFactory.Create(header, 0);
           return new BitmapMatrix<float>
           {
+            Type = typeof(float),
             Rows = header.Height,
             Cols = header.Width,
             Data = convertToFloats(pixelData)
@@ -142,6 +155,19 @@ namespace ChartInUWP
       {
         case GrayscalePixelDataU16 temp:
           return temp.Data;
+
+        default:
+          break;
+      }
+      return default;
+    }
+
+    private byte[] convertToBytes(IPixelData data)
+    {
+      switch (data)
+      {
+        case GrayscalePixelDataU16 temp:
+          return temp.Data.Select(v => BitConverter.GetBytes(v)).SelectMany(b => b).ToArray();
 
         default:
           break;

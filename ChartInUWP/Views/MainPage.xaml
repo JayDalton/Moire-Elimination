@@ -69,7 +69,7 @@
 
         <Image 
             Grid.Column="2" Stretch="Uniform" 
-            Source="{Binding CanvasSource, Mode=OneWay}"
+            Source="{Binding ImageTarget, Mode=OneWay}"
             Visibility="{Binding CanvasVisible, Mode=TwoWay}"/>
 
         <ProgressRing 

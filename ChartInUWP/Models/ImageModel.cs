@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -29,6 +30,8 @@ namespace ChartInUWP
 
     #region Properties
 
+    public Size Size { get; set; }
+
     public StorageFile File { get; private set; }
 
     #endregion Properties
@@ -51,11 +54,17 @@ namespace ChartInUWP
       picker.FileTypeFilter.Add(".tif");
 
       File = await picker.PickSingleFileAsync();
+      return await OpenFileAsync(File);
+    }
+
+    public async Task<bool> OpenFileAsync(StorageFile file)
+    {
       if (File != null)
       {
         using (var stream = await File.OpenAsync(FileAccessMode.Read))
         {
           _decoder = await BitmapDecoder.CreateAsync(stream);
+          Size = new Size(_decoder.PixelWidth, _decoder.PixelHeight);
           return true;
         }
       }
@@ -66,11 +75,59 @@ namespace ChartInUWP
     {
       if (_decoder != null)
       {
+
+        switch (_decoder.BitmapPixelFormat)
+        {
+          case BitmapPixelFormat.Unknown:
+            break;
+          case BitmapPixelFormat.Rgba16:
+            break;
+          case BitmapPixelFormat.Rgba8:
+            break;
+          case BitmapPixelFormat.Gray16:
+            break;
+          case BitmapPixelFormat.Gray8:
+            break;
+          case BitmapPixelFormat.Bgra8:
+            break;
+          case BitmapPixelFormat.Nv12:
+            break;
+          case BitmapPixelFormat.Yuy2:
+            break;
+          default:
+            break;
+        }
+
         var bitmap = await _decoder.GetSoftwareBitmapAsync();
+
         var source = new SoftwareBitmapSource();
         await source.SetBitmapAsync(bitmap);
       }
       return default(ImageSource);
+    }
+
+    public async Task<BitmapMatrix<byte>> GetBytesMatrixAsync()
+    {
+      if (_decoder != null)
+      {
+        var info = _decoder.DecoderInformation;
+        var provider = await _decoder.GetPixelDataAsync(
+          BitmapPixelFormat.Gray16,
+          BitmapAlphaMode.Premultiplied,
+          new BitmapTransform(),
+          ExifOrientationMode.IgnoreExifOrientation,
+          ColorManagementMode.DoNotColorManage
+        );
+
+        return new BitmapMatrix<byte>
+        {
+          Step = sizeof(UInt16),  // bytes per pixel
+          Rows = (ushort)_decoder.PixelHeight,
+          Cols = (ushort)_decoder.PixelWidth,
+          Data = provider.DetachPixelData()
+        };
+      }
+      return default;
     }
 
     public async Task<BitmapMatrix<ushort>> GetShortsMatrixAsync()
@@ -82,18 +139,17 @@ namespace ChartInUWP
         {
           var pixelData = await _decoder.GetPixelDataAsync();
           byte[] buffer = pixelData.DetachPixelData();
-          Enumerable.Range(0, buffer.Length / 2)
-            .Select(idx => BitConverter.ToUInt16(buffer, idx));
+          Enumerable.Range(0, buffer.Length / 2).Select(idx => BitConverter.ToUInt16(buffer, idx));
           return new BitmapMatrix<ushort>
           {
+            Step = 1,
             Rows = (ushort)bitmap.PixelHeight,
             Cols = (ushort)bitmap.PixelWidth,
-            Data = Enumerable.Range(0, buffer.Length / 2)
-              .Select(idx => BitConverter.ToUInt16(buffer, idx)).ToArray()
+            Data = Enumerable.Range(0, buffer.Length / 2).Select(idx => BitConverter.ToUInt16(buffer, idx)).ToArray()
           };
         }
       }
-      return default(BitmapMatrix<ushort>);
+      return default;
     }
 
     public async Task LoadImageDataFromFile()
