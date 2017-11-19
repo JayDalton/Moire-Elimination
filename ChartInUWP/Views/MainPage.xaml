@@ -35,8 +35,7 @@
 
         <Image 
             Grid.Column="0" Stretch="Uniform"
-            Source="{Binding ImageSource, Mode=OneWay}"
-            Visibility="{Binding ImageVisible, Mode=TwoWay}"/>
+            Source="{Binding ImageSource, Mode=OneWay}"/>
 
         <ProgressRing 
             Grid.Column="0" Width="80" Height="80"
@@ -69,8 +68,7 @@
 
         <Image 
             Grid.Column="2" Stretch="Uniform" 
-            Source="{Binding ImageTarget, Mode=OneWay}"
-            Visibility="{Binding CanvasVisible, Mode=TwoWay}"/>
+            Source="{Binding ImageTarget, Mode=OneWay}"/>
 
         <ProgressRing 
             Grid.Column="2" Width="80" Height="80"

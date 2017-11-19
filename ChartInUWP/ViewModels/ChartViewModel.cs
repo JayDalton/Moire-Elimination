@@ -1,4 +1,5 @@
-﻿using ChartInUWP.ViewModels.Commands;
+﻿using ChartInUWP.ModelServices;
+using ChartInUWP.ViewModels.Commands;
 using MathNet.Numerics;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
@@ -28,6 +29,24 @@ namespace ChartInUWP.ViewModels
       {
         ImageDisplayName = "Design Mode";
       }
+
+      var device = CanvasDevice.GetSharedDevice();
+      ImageSource = new CanvasRenderTarget(device, 1000, 1000, 96);
+      //var service = new ImageService(ImageSource);
+      //service.ClearScreen(Colors.Orange);
+      using (var session = ImageSource.CreateDrawingSession())
+      {
+        session.Clear(Colors.Orange);
+      }
+
+      CanvasImageSource cis = new CanvasImageSource(device, 1000, 1000, 96);
+      
+
+      ImageTarget = new CanvasImageSource(device, 1000, 1000, 96);
+      using (var session = ImageTarget.CreateDrawingSession(Colors.Blue))
+      {
+        session.DrawImage(ImageSource);
+      }
     }
 
     #region Properties
@@ -39,8 +58,8 @@ namespace ChartInUWP.ViewModels
       set { SetProperty(ref _imageSource, value); }
     }
 
-    CanvasRenderTarget _imageTarget;
-    public CanvasRenderTarget ImageTarget
+    CanvasImageSource _imageTarget;
+    public CanvasImageSource ImageTarget
     {
       get { return _imageTarget; }
       set { SetProperty(ref _imageTarget, value); }
@@ -185,7 +204,7 @@ namespace ChartInUWP.ViewModels
         ImageProgressing = true;
         await _editor.LoadImageSourceAsync();
         ImageProgressing = false;
-        ImageTarget = _editor.ImageTarget;
+        //ImageTarget = _editor.ImageTarget;
       }
     }
 
