@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using ChartInUWP.Interfaces;
+using ChartWRCLibrary;
 
 namespace ChartInUWP.ModelServices
 {
@@ -23,7 +24,7 @@ namespace ChartInUWP.ModelServices
   public class FourierService
   {
     #region Fields
-
+    Class1 myClass;
     IPixelSource _pixelSource;
     BlockingCollection<(int, Complex32[])> _complex32;
     BlockingCollection<(int, float[])> _magnitude;
@@ -33,6 +34,13 @@ namespace ChartInUWP.ModelServices
 
     public FourierService(IPixelSource pixelSource)
     {
+      myClass = new Class1();
+      //var tmp = myClass.LogCalc(123);
+
+      //var class1 = new Class1();
+
+      
+
       _pixelSource = pixelSource;
       _complex32 = new BlockingCollection<(int, Complex32[])>();
       _magnitude = new BlockingCollection<(int, float[])>();

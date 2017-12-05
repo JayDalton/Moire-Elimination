@@ -12,6 +12,8 @@ using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using System.Collections.Concurrent;
 using System;
+using ChartWRCLibrary;
+using System.Linq;
 
 namespace ChartInUWP
 {
@@ -26,11 +28,13 @@ namespace ChartInUWP
     CanvasDevice _renderDevice; // render device
     ChartService _chartService; // render chart
     ImageService _imageService; // render image
+    FftHelper _fourierHelp;   
 
     #endregion Fields
 
     public ImageEditor()
     {
+      _fourierHelp = new FftHelper();
       _renderDevice = CanvasDevice.GetSharedDevice();
       var pixelSize = _renderDevice.MaximumBitmapSizeInPixels;
       var cacheSize = _renderDevice.MaximumCacheSize;
@@ -93,7 +97,13 @@ namespace ChartInUWP
 
     public async Task LoadImageSourceAsync()
     {
+      var temp = _pixelSource.GetContentAsDouble();
+
+      var res = _fourierHelp.SetContent(_pixelSource.Size.Width, _pixelSource.Size.Height, temp.ToList());
+
+
       var image = await _pixelSource.GetBytesMatrixAsync();
+
       ImageSource = new CanvasRenderTarget(_renderDevice, image.Cols, image.Rows, 96);
       _imageService = new ImageService(ImageSource);
       _imageService.ClearScreen(Colors.Orange);

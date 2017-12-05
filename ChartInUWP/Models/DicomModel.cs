@@ -90,6 +90,23 @@ namespace ChartInUWP
       return default;
     }
 
+    public IEnumerable<double> GetContentAsDouble()
+    {
+      if (ContainsData())
+      {
+        var header = DicomPixelData.Create(_dicomFile.Dataset);
+        var pixelData = PixelDataFactory.Create(header, 0);
+        switch (pixelData)
+        {
+          case GrayscalePixelDataU16 temp:
+            //return temp.Data;//.Select(v => BitConverter.GetBytes(v)).SelectMany(b => b);
+            return temp.Data.Select(Convert.ToSingle).Select(v => v * (1.0 / double.MaxValue));
+            //  break;
+        }
+      }
+      return null;
+    }
+
     public async Task<BitmapMatrix<byte>> GetBytesMatrixAsync()
     {
       return await Task.Run(() => {

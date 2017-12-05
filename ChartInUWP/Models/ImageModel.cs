@@ -167,6 +167,11 @@ namespace ChartInUWP
       throw new NotImplementedException();
     }
 
+    public IEnumerable<double> GetContentAsDouble()
+    {
+      throw new NotImplementedException();
+    }
+
     #endregion Methods
   }
 }

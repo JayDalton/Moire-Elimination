@@ -172,7 +172,12 @@
       <Version>1.21.0</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\ChartWRCLibrary\ChartWRCLibrary.vcxproj">
+      <Project>{07dd856d-f0a7-4fb7-9131-22ab3bb7d8b5}</Project>
+      <Name>ChartWRCLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

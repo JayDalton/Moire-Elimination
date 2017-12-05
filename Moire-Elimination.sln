@@ -1,16 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DICOM_OpenCV", "DICOM_OpenCV\DICOM_OpenCV.vcxproj", "{05D971D7-565C-4B51-AB59-1CFB5B32FFAD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartInUWP", "ChartInUWP\ChartInUWP.csproj", "{D11B7A98-86E3-4B39-A034-2E2315891147}"
+	ProjectSection(ProjectDependencies) = postProject
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5} = {07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartInUWPTests", "ChartInUWPTests\ChartInUWPTests.csproj", "{5738C3BE-3541-4810-919A-ACE4BD731C81}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D11B7A98-86E3-4B39-A034-2E2315891147} = {D11B7A98-86E3-4B39-A034-2E2315891147}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ChartWRCLibrary", "ChartWRCLibrary\ChartWRCLibrary.vcxproj", "{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -138,6 +143,36 @@ Global
 		{5738C3BE-3541-4810-919A-ACE4BD731C81}.RelWithDebInfo|x64.Build.0 = Release|x64
 		{5738C3BE-3541-4810-919A-ACE4BD731C81}.RelWithDebInfo|x86.ActiveCfg = Release|x86
 		{5738C3BE-3541-4810-919A-ACE4BD731C81}.RelWithDebInfo|x86.Build.0 = Release|x86
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|ARM.ActiveCfg = Debug|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|ARM.Build.0 = Debug|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|x64.ActiveCfg = Debug|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|x64.Build.0 = Debug|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|x86.ActiveCfg = Debug|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Debug|x86.Build.0 = Debug|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|Any CPU.ActiveCfg = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|Any CPU.Build.0 = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|ARM.ActiveCfg = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|ARM.Build.0 = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|x64.ActiveCfg = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|x64.Build.0 = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|x86.ActiveCfg = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.MinSizeRel|x86.Build.0 = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|Any CPU.ActiveCfg = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|ARM.ActiveCfg = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|ARM.Build.0 = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|x64.ActiveCfg = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|x64.Build.0 = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|x86.ActiveCfg = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.Release|x86.Build.0 = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|Any CPU.ActiveCfg = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|Any CPU.Build.0 = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|ARM.ActiveCfg = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|ARM.Build.0 = Release|ARM
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|x64.Build.0 = Release|x64
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|x86.ActiveCfg = Release|Win32
+		{07DD856D-F0A7-4FB7-9131-22AB3BB7D8B5}.RelWithDebInfo|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -3,6 +3,7 @@ using ChartInUWP.ViewModels.Commands;
 using MathNet.Numerics;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -47,9 +48,19 @@ namespace ChartInUWP.ViewModels
       {
         session.DrawImage(ImageSource);
       }
+
+      FlipSource = new List<CanvasImageSource>();
+      FlipSource.Add(ImageTarget);
     }
 
     #region Properties
+
+    private List<CanvasImageSource> _flipSource;
+    public List<CanvasImageSource> FlipSource
+    {
+      get { return _flipSource; }
+      set { SetProperty(ref _flipSource, value); }
+    }
 
     CanvasRenderTarget _imageSource;
     public CanvasRenderTarget ImageSource
