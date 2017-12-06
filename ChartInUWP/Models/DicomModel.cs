@@ -90,7 +90,7 @@ namespace ChartInUWP
       return default;
     }
 
-    public IEnumerable<double> GetContentAsDouble()
+    public IEnumerable<ushort> GetContentAsUShort()
     {
       if (ContainsData())
       {
@@ -99,8 +99,8 @@ namespace ChartInUWP
         switch (pixelData)
         {
           case GrayscalePixelDataU16 temp:
-            //return temp.Data;//.Select(v => BitConverter.GetBytes(v)).SelectMany(b => b);
-            return temp.Data.Select(Convert.ToSingle).Select(v => v * (1.0 / double.MaxValue));
+            return temp.Data;//.Select(v => BitConverter.GetBytes(v)).SelectMany(b => b);
+            //return temp.Data.Select(Convert.ToSingle).Select(v => v * (1.0 / double.MaxValue));
             //  break;
         }
       }

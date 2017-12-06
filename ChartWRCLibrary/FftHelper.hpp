@@ -27,8 +27,8 @@ namespace ChartWRCLibrary
 	public:
 		FftHelper();
 		event FourierCalcHandler^ fourierEvent;
-		IVector<double> ^SetContent(double rows, double cols, IVector<double>^ data);
-		IVector<double> ^SetContent(uint16 rows, uint16 cols, IVector<unsigned short>^ data);
+		IMapView<int, IVector<float64>^>^ SetContent(double rows, double cols, IVector<uint16>^ data);
+		IMapView<String^, int>^ GetMap();
 	};
 
 	public value struct ImageMatrix {

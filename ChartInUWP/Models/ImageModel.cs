@@ -167,7 +167,7 @@ namespace ChartInUWP
       throw new NotImplementedException();
     }
 
-    public IEnumerable<double> GetContentAsDouble()
+    public IEnumerable<ushort> GetContentAsUShort()
     {
       throw new NotImplementedException();
     }

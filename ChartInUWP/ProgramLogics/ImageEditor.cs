@@ -97,8 +97,8 @@ namespace ChartInUWP
 
     public async Task LoadImageSourceAsync()
     {
-      var temp = _pixelSource.GetContentAsDouble();
-
+      var temp = _pixelSource.GetContentAsUShort();
+      
       var res = _fourierHelp.SetContent(_pixelSource.Size.Width, _pixelSource.Size.Height, temp.ToList());
 
 

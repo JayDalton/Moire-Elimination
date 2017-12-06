@@ -21,7 +21,7 @@ namespace ChartInUWP.Interfaces
     Task<bool> OpenFileAsync();
     Task<ImageSource> GetImageSourceAsync();
     IEnumerable<float[]> GetFloatsIterator();
-    IEnumerable<double> GetContentAsDouble();
+    IEnumerable<ushort> GetContentAsUShort();
     Task<BitmapMatrix<byte>> GetBytesMatrixAsync();
     Task<BitmapMatrix<float>> GetFloatsMatrixAsync();
     Task<BitmapMatrix<ushort>> GetShortsMatrixAsync();

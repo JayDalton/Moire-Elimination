@@ -8,49 +8,28 @@ FftHelper::FftHelper(void)
 	m_fourier = new FftRealPair;
 };
 
-IVector<double>^ FftHelper::SetContent(double rows, double cols, IVector<double>^ data)
-{
-	auto size = data->Size;
-
-	Vector<int>^ vec = ref new Vector<int>();
-	vec->Append(1);
-	vec->Append(2);
-	vec->Append(3);
-	vec->Append(4);
-	vec->Append(5);
-
-	auto it = std::find(begin(vec), end(vec), 3);
-	int j = *it; //j = 3
-	int k = *(it + 1); //or it[1]
-
-	{
-		std::vector<int> vec;
-		for (int i = 0; i < 10; i++)
-		{
-			vec.push_back(i);
-		}
-		// Implicit conversion to IVector
-		auto res = ref new Vector<int>(std::move(vec));
-	}
-
-	auto imag = new std::vector<double>(data->Size, 0);
-	auto real = new std::vector<double>(begin(data), end(data));
-	//std::vector<double> imag_vector(data->Size, 0);
-	//std::vector<double> real_vector(begin(data), end(data));
-
-	//m_fourier->transform(*real, *imag);
-
-	return ref new Vector<double>(imag->begin(), imag->end());
-}
-
-IVector<double>^ FftHelper::SetContent(uint16 rows, uint16 cols, IVector<unsigned short>^ data)
+IMapView<int, IVector<float64>^>^ FftHelper::SetContent(double rows, double cols, IVector<uint16>^ data)
 {
 	//std::vector<short> shrt_vector;
 	//std::vector<double> dbl_vector(data->First(), data->);
 
 	//m_fourier->;
+	Map<int, IVector<float64>^>^ z = ref new Map<int, IVector<float64>^>();
+	
+	//for (size_t row = 0; row < rows; row++)
+	//{
+	//	//std::vector<double> vec(cols);
+	//	//std::copy(real, real + cols, vec.begin());
+	//	//m->Insert(row, new Vector<double>(cols, 0));
+	//}
 
-	return ref new Vector<double>();
+	return z->GetView();
+}
+
+IMapView<String^, int>^ FftHelper::GetMap() 
+{
+	Map<String^, int>^ m = ref new Map<String^, int >();
+	return m->GetView();
 }
 
 Class1::Class1(void) {};
