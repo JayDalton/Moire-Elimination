@@ -15,7 +15,9 @@ namespace ChartInUWP.Interfaces
   /// </summary>
   public interface IPixelSource
   {
-    Size Size { get; }
+    //Size Size { get; }
+    uint Width { get; }
+    uint Height { get; }
     bool ContainsData();
     StorageFile File { get; }
     Task<bool> OpenFileAsync();

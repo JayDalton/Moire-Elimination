@@ -27,7 +27,7 @@ namespace ChartWRCLibrary
 	public:
 		FftHelper();
 		event FourierCalcHandler^ fourierEvent;
-		IMapView<int, IVector<float64>^>^ SetContent(double rows, double cols, IVector<uint16>^ data);
+		IMapView<int, IVector<float64>^>^ SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data);
 		IMapView<String^, int>^ GetMap();
 	};
 

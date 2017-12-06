@@ -30,9 +30,14 @@ namespace ChartInUWP
 
     #region Properties
 
-    public Size Size { get; set; }
+    //public Size Size { get; set; }
+
 
     public StorageFile File { get; private set; }
+
+    public uint Width { get; private set; }
+
+    public uint Height { get; private set; }
 
     #endregion Properties
 
@@ -64,7 +69,8 @@ namespace ChartInUWP
         using (var stream = await File.OpenAsync(FileAccessMode.Read))
         {
           _decoder = await BitmapDecoder.CreateAsync(stream);
-          Size = new Size(_decoder.PixelWidth, _decoder.PixelHeight);
+          Height = _decoder.PixelHeight;
+          Width = _decoder.PixelWidth;
           return true;
         }
       }

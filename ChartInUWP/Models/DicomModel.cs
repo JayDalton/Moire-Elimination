@@ -34,7 +34,9 @@ namespace ChartInUWP
 
     #region Properties
 
-    public Size Size { get; set; }
+    public uint Width { get; private set; }
+
+    public uint Height { get; private set; }
 
     public StorageFile File { get; private set; }
 
@@ -66,7 +68,8 @@ namespace ChartInUWP
           var stream = await File.OpenStreamForReadAsync();
           _dicomFile = await DicomFile.OpenAsync(stream);
           var header = DicomPixelData.Create(_dicomFile.Dataset);
-          Size = new Size(header.Width, header.Height);
+          Height = header.Height;
+          Width = header.Width;
           return true;
         }
         catch (Exception ex)

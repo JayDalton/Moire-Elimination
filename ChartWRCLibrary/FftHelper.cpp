@@ -8,7 +8,7 @@ FftHelper::FftHelper(void)
 	m_fourier = new FftRealPair;
 };
 
-IMapView<int, IVector<float64>^>^ FftHelper::SetContent(double rows, double cols, IVector<uint16>^ data)
+IMapView<int, IVector<float64>^>^ FftHelper::SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data)
 {
 	//std::vector<short> shrt_vector;
 	//std::vector<double> dbl_vector(data->First(), data->);

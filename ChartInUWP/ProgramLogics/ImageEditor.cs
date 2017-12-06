@@ -72,7 +72,7 @@ namespace ChartInUWP
       _pixelSource = new DicomModel();
       if (await _pixelSource.OpenFileAsync()) // open
       {
-        StorageSize = _pixelSource.Size;
+        StorageSize = new Size(_pixelSource.Width, _pixelSource.Height);
         StorageFile = _pixelSource.File;
         return true;
       }
@@ -88,7 +88,7 @@ namespace ChartInUWP
       _pixelSource = new ImageModel();
       if (await _pixelSource.OpenFileAsync())
       {
-        StorageSize = _pixelSource.Size;
+        StorageSize = new Size(_pixelSource.Width, _pixelSource.Height);
         StorageFile = _pixelSource.File;
         return true;
       }
@@ -99,7 +99,7 @@ namespace ChartInUWP
     {
       var temp = _pixelSource.GetContentAsUShort();
       
-      var res = _fourierHelp.SetContent(_pixelSource.Size.Width, _pixelSource.Size.Height, temp.ToList());
+      var res = _fourierHelp.SetContent(_pixelSource.Width, _pixelSource.Height, temp.ToList());
 
 
       var image = await _pixelSource.GetBytesMatrixAsync();
