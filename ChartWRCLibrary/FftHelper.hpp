@@ -1,8 +1,10 @@
 ﻿#pragma once
 
+#include <cassert>
 #include <ppltasks.h>
 #include <concurrent_vector.h>
 #include <collection.h>
+#include <map>
 #include <ppl.h>
 #include <amp.h>
 #include <amp_math.h>

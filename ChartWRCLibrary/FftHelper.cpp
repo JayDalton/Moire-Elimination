@@ -10,18 +10,21 @@ FftHelper::FftHelper(void)
 
 IMapView<int, IVector<float64>^>^ FftHelper::SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data)
 {
-	//std::vector<short> shrt_vector;
-	//std::vector<double> dbl_vector(data->First(), data->);
+	assert(rows * cols == data->Size);
 
-	//m_fourier->;
+	std::vector<std::vector<double>> content;
+	for (size_t row = 0; row < rows; row++)
+	{
+
+	}
+
+
 	Map<int, IVector<float64>^>^ z = ref new Map<int, IVector<float64>^>();
 	
-	//for (size_t row = 0; row < rows; row++)
-	//{
-	//	//std::vector<double> vec(cols);
-	//	//std::copy(real, real + cols, vec.begin());
-	//	//m->Insert(row, new Vector<double>(cols, 0));
-	//}
+	for (size_t row = 0; row < rows; row++)
+	{
+		z->Insert(row, ref new Vector<double>(begin(data) + (row * cols), begin(data) + (row * cols + cols)));
+	}
 
 	return z->GetView();
 }

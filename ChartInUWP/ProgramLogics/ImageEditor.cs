@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using System;
 using ChartWRCLibrary;
 using System.Linq;
+using System.Diagnostics;
 
 namespace ChartInUWP
 {
@@ -98,9 +99,13 @@ namespace ChartInUWP
     public async Task LoadImageSourceAsync()
     {
       var temp = _pixelSource.GetContentAsUShort();
-      
-      var res = _fourierHelp.SetContent(_pixelSource.Width, _pixelSource.Height, temp.ToList());
 
+      var res = _fourierHelp.SetContent(_pixelSource.Width, _pixelSource.Height, temp.ToList());
+      
+      foreach (var (line, values) in res)
+      {
+        Debug.WriteLine($"key: {line} with {values.Count}");
+      }
 
       var image = await _pixelSource.GetBytesMatrixAsync();
 
