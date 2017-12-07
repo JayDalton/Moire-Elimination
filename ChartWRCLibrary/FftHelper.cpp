@@ -25,7 +25,10 @@ IVectorView<IVector<float64>^>^ FftHelper::SetContent(uint32 rows, uint32 cols, 
 	auto result = ref new Vector<IVector<float64>^>();
 	for (auto it = content->begin(); it != content->end(); ++it) 
 	{
-		result->Append(ref new Vector<double>(*it));
+		assert(it->size() == cols);
+		auto imag = std::vector<double>(cols, 0);
+		m_fourier->transformBluestein(*it, imag);
+		result->Append(ref new Vector<double>(imag));
 	}
 
 	return result->GetView();

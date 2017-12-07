@@ -105,6 +105,11 @@ namespace ChartInUWP
       foreach (var (values, line) in res.Select((v, i) => (v, i)))
       {
         Debug.WriteLine($"key: {line} with {values.Count}");
+        foreach (var item in values.Take(10))
+        {
+          Debug.Write($"{item:0.00} ");
+        }
+        Debug.WriteLine("");
       }
 
       var image = await _pixelSource.GetBytesMatrixAsync();
