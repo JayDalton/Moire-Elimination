@@ -102,7 +102,7 @@ namespace ChartInUWP
 
       var res = _fourierHelp.SetContent(_pixelSource.Width, _pixelSource.Height, temp.ToList());
       
-      foreach (var (line, values) in res)
+      foreach (var (values, line) in res.Select((v, i) => (v, i)))
       {
         Debug.WriteLine($"key: {line} with {values.Count}");
       }

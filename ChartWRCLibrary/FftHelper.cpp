@@ -8,25 +8,27 @@ FftHelper::FftHelper(void)
 	m_fourier = new FftRealPair;
 };
 
-IMapView<int, IVector<float64>^>^ FftHelper::SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data)
+IVectorView<IVector<float64>^>^ FftHelper::SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data)
 {
 	assert(rows * cols == data->Size);
 
-	std::vector<std::vector<double>> content;
+	auto content = new std::vector<std::vector<double>>();
 	for (size_t row = 0; row < rows; row++)
 	{
-
+		content->push_back(std::vector<double>(begin(data) + (row * cols), begin(data) + (row * cols + cols)));
 	}
 
 
-	Map<int, IVector<float64>^>^ z = ref new Map<int, IVector<float64>^>();
-	
-	for (size_t row = 0; row < rows; row++)
+	// ToDo: processing
+
+
+	auto result = ref new Vector<IVector<float64>^>();
+	for (auto it = content->begin(); it != content->end(); ++it) 
 	{
-		z->Insert(row, ref new Vector<double>(begin(data) + (row * cols), begin(data) + (row * cols + cols)));
+		result->Append(ref new Vector<double>(*it));
 	}
 
-	return z->GetView();
+	return result->GetView();
 }
 
 IMapView<String^, int>^ FftHelper::GetMap() 
