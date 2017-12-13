@@ -29,12 +29,14 @@ namespace ChartInUWP
     CanvasDevice _renderDevice; // render device
     ChartService _chartService; // render chart
     ImageService _imageService; // render image
-    FftHelper _fourierHelp;   
+    FftHelper _fourierHelp;
+    Class1 _class1;
 
     #endregion Fields
 
     public ImageEditor()
     {
+      _class1 = new Class1();
       _fourierHelp = new FftHelper();
       _renderDevice = CanvasDevice.GetSharedDevice();
       var pixelSize = _renderDevice.MaximumBitmapSizeInPixels;
@@ -100,8 +102,10 @@ namespace ChartInUWP
     {
       var temp = _pixelSource.GetContentAsUShort();
 
+      var old = await _class1.GetPrimesOrdered(3, 2100000);
+
       var res = _fourierHelp.SetContent(_pixelSource.Width, _pixelSource.Height, temp.ToList());
-      
+
       foreach (var (values, line) in res.Select((v, i) => (v, i)))
       {
         Debug.WriteLine($"key: {line} with {values.Count}");
