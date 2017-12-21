@@ -39,30 +39,6 @@ template<typename T>
     return ref new ::Platform::Box<T>((T)userType->CreateEnumUIntFromString(input));
 }
 
-template<typename TDeclaringType>
-::Platform::Object^ GetReferenceTypeMember_Bar(::Platform::Object^ instance)
-{
-    return safe_cast<TDeclaringType^>(instance)->Bar;
-}
-
-template<typename TDeclaringType>
-::Platform::Object^ GetReferenceTypeMember_Foo(::Platform::Object^ instance)
-{
-    return safe_cast<TDeclaringType^>(instance)->Foo;
-}
-
-template<typename TDeclaringType, typename TValue>
-void SetReferenceTypeMember_Bar(::Platform::Object^ instance, ::Platform::Object^ value)
-{
-    safe_cast<TDeclaringType^>(instance)->Bar = safe_cast<TValue^>(value);
-}
-
-template<typename TDeclaringType, typename TValue>
-void SetReferenceTypeMember_Foo(::Platform::Object^ instance, ::Platform::Object^ value)
-{
-    safe_cast<TDeclaringType^>(instance)->Foo = safe_cast<TValue^>(value);
-}
-
 struct TypeInfo
 {
     PCWSTR  typeName;
@@ -84,46 +60,28 @@ struct TypeInfo
 TypeInfo TypeInfos[] = 
 {
     //   0
-    L"Object", L"",
-    nullptr, nullptr, nullptr, nullptr,
-    -1,
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
-    false, true,  false, false,
+    L"ChartInUWPcpp.MainPage", L"",
+    &ActivateType<::ChartInUWPcpp::MainPage>, nullptr, nullptr, nullptr,
+    1, // Windows.UI.Xaml.Controls.Page
+    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    true,  false, false, false,
     //   1
-    L"String", L"",
+    L"Windows.UI.Xaml.Controls.Page", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
     0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   2
-    L"ChartInUWPcpp.MainPage", L"",
-    &ActivateType<::ChartInUWPcpp::MainPage>, nullptr, nullptr, nullptr,
-    4, // Windows.UI.Xaml.Controls.Page
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
-    true,  false, false, false,
-    //   3
-    L"ChartInUWPcpp.BindableBase", L"",
-    &ActivateType<::ChartInUWPcpp::BindableBase>, nullptr, nullptr, nullptr,
-    0, // Object
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
-    true,  false, false, true, 
-    //   4
-    L"Windows.UI.Xaml.Controls.Page", L"",
-    nullptr, nullptr, nullptr, nullptr,
-    -1,
-    2, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
-    false, true,  false, false,
-    //   5
     L"Windows.UI.Xaml.Controls.UserControl", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    2, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //  Last type here is for padding
     L"", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1, 
-    2, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    0, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
     false, false, false, false,
 };
 
@@ -135,74 +93,38 @@ UINT TypeInfoLookup[] = {
       0,   //   4
       0,   //   5
       0,   //   6
-      2,   //   7
-      2,   //   8
-      2,   //   9
-      2,   //  10
-      2,   //  11
-      2,   //  12
-      2,   //  13
-      2,   //  14
-      2,   //  15
-      2,   //  16
-      2,   //  17
-      2,   //  18
-      2,   //  19
-      2,   //  20
-      2,   //  21
-      2,   //  22
-      3,   //  23
-      3,   //  24
-      3,   //  25
-      3,   //  26
-      4,   //  27
-      4,   //  28
-      4,   //  29
-      5,   //  30
-      5,   //  31
-      5,   //  32
-      5,   //  33
-      5,   //  34
-      5,   //  35
-      5,   //  36
-      6,   //  37
+      0,   //   7
+      0,   //   8
+      0,   //   9
+      0,   //  10
+      0,   //  11
+      0,   //  12
+      0,   //  13
+      0,   //  14
+      0,   //  15
+      0,   //  16
+      0,   //  17
+      0,   //  18
+      0,   //  19
+      0,   //  20
+      0,   //  21
+      0,   //  22
+      1,   //  23
+      1,   //  24
+      1,   //  25
+      1,   //  26
+      1,   //  27
+      1,   //  28
+      1,   //  29
+      2,   //  30
+      2,   //  31
+      2,   //  32
+      2,   //  33
+      2,   //  34
+      2,   //  35
+      2,   //  36
+      3,   //  37
 };
-
-struct MemberInfo 
-{
-    PCWSTR shortName;
-    ::Platform::Object^ (*getter)(::Platform::Object^);
-    void (*setter)(::Platform::Object^, ::Platform::Object^);
-    int typeIndex;
-    int targetTypeIndex;
-    bool isReadOnly;
-    bool isDependencyProperty;
-    bool isAttachable;
-};
-
-MemberInfo MemberInfos[] = 
-{
-    //   0 - ChartInUWPcpp.BindableBase.Bar
-    L"Bar",
-    &GetReferenceTypeMember_Bar<::ChartInUWPcpp::BindableBase>,
-    &SetReferenceTypeMember_Bar<::ChartInUWPcpp::BindableBase, ::Platform::String>,
-    1, // String
-    -1,
-    false, false, false,
-    //   1 - ChartInUWPcpp.BindableBase.Foo
-    L"Foo",
-    &GetReferenceTypeMember_Foo<::ChartInUWPcpp::BindableBase>,
-    &SetReferenceTypeMember_Foo<::ChartInUWPcpp::BindableBase, ::Platform::String>,
-    1, // String
-    -1,
-    false, false, false,
-};
-
-PCWSTR GetShortName(PCWSTR longName)
-{
-    PCWSTR separator = wcsrchr(longName, '.');
-    return separator != nullptr ? separator + 1: longName;
-}
 
 TypeInfo* GetTypeInfo(::Platform::String^ typeName)
 {
@@ -215,31 +137,6 @@ TypeInfo* GetTypeInfo(::Platform::String^ typeName)
             {
                 return &TypeInfos[i];
             }
-        }
-    }
-    return nullptr;
-}
-
-MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
-{
-    for (int lastDotIndex = longMemberName->Length(); lastDotIndex >= 0; lastDotIndex--)
-    {
-        if (longMemberName->Data()[lastDotIndex] == '.')
-        {
-            TypeInfo* pTypeInfo = GetTypeInfo(ref new ::Platform::String(longMemberName->Data(), lastDotIndex));
-            TypeInfo* pNextTypeInfo = pTypeInfo + 1;
-            if (pTypeInfo)
-            {
-                PCWSTR shortMemberName = GetShortName(longMemberName->Data());
-                for (int i = pTypeInfo->firstMemberIndex; i < pNextTypeInfo->firstMemberIndex; i++)
-                {
-                    if (wcscmp(shortMemberName, MemberInfos[i].shortName) == 0)
-                    {
-                        return &MemberInfos[i];
-                    }
-                }
-            }
-            break;
         }
     }
     return nullptr;
@@ -282,12 +179,6 @@ MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
         userType->IsLocalType = pTypeInfo->isLocalType;
         userType->IsReturnTypeStub = pTypeInfo->isReturnTypeStub;
         userType->IsBindable = pTypeInfo->isBindable;
-        int nextMemberIndex = pTypeInfo->firstMemberIndex;
-        for (int i=pTypeInfo->firstMemberIndex; i < pNextTypeInfo->firstMemberIndex; i++)
-        {
-            userType->AddMemberName(::Platform::StringReference(MemberInfos[i].shortName));
-            nextMemberIndex++;
-        }
         return userType;
     }
 }
@@ -295,20 +186,8 @@ MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
 ::Windows::UI::Xaml::Markup::IXamlMember^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::CreateXamlMember(::Platform::String^ longMemberName)
 {
     ::XamlTypeInfo::InfoProvider::XamlMember^ xamlMember = nullptr;
-    MemberInfo* pMemberInfo = GetMemberInfo(longMemberName);
-    if (pMemberInfo != nullptr)
-    {
-        xamlMember = ref new ::XamlTypeInfo::InfoProvider::XamlMember(
-            this,
-            ::Platform::StringReference(pMemberInfo->shortName),
-            ::Platform::StringReference(TypeInfos[pMemberInfo->typeIndex].typeName));
-        xamlMember->Getter = pMemberInfo->getter;
-        xamlMember->Setter = pMemberInfo->setter;
-        xamlMember->TargetTypeName = pMemberInfo->targetTypeIndex >= 0 ? ::Platform::StringReference(TypeInfos[pMemberInfo->targetTypeIndex].typeName) : L"";
-        xamlMember->IsReadOnly = pMemberInfo->isReadOnly;
-        xamlMember->IsDependencyProperty = pMemberInfo->isDependencyProperty;
-        xamlMember->IsAttachable = pMemberInfo->isAttachable;
-    }
+    // No Local Properties
+    (void)longMemberName; // Unused parameter
     return xamlMember;
 }
 

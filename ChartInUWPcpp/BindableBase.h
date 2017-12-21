@@ -2,10 +2,12 @@
 
 using namespace Platform;
 using namespace Windows::Foundation;
+using namespace Windows::Foundation::Metadata;
+using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Data;
 using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Interop;
-	
+
 namespace ChartInUWPcpp 
 {
 
@@ -47,50 +49,62 @@ namespace ChartInUWPcpp
 		virtual bool CanExecute(Object^ parameter);
 	};
 
+	[WebHostHidden]
+	public ref class BindableBase : DependencyObject, INotifyPropertyChanged
+	{
+	public:
+		virtual event PropertyChangedEventHandler^ PropertyChanged;
+
+	protected:
+		virtual void OnPropertyChanged(String^ propertyName);
+	};
+
+
 	//public delegate void PropertyChangedEventHandler();
 
 	//[Windows::UI::Xaml::Data::BindableAttribute]
-	public ref class BindableBase : INotifyPropertyChanged
-	{
-	public:
-		//BindableBase();
-		//~BindableBase();
-		virtual event PropertyChangedEventHandler^ PropertyChanged;
-		//void RaisePropertyChanged(String property);
-		property Platform::String^ Foo
-		{
-			Platform::String^ get();
-			void set(Platform::String^ value);
-		}
+	//public ref class BindableBase : INotifyPropertyChanged
+	//{
+	//public:
+	//	//BindableBase();
+	//	//~BindableBase();
+	//	virtual event PropertyChangedEventHandler^ PropertyChanged;
+	//	//void RaisePropertyChanged(String property);
+	//	property Platform::String^ Foo
+	//	{
+	//		Platform::String^ get();
+	//		void set(Platform::String^ value);
+	//	}
 
-		property Platform::String^ Bar
-		{
-			Platform::String^ get();
-			void set(Platform::String^ value);
-		}
-	private:
-		Platform::String^ m_Foo;
-		Platform::String^ m_Bar;
-	protected:
-		virtual void OnPropertyChanged(Platform::String^ propertyName);
-		//{
-		//	PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
-		//}
-	};
+	//	property Platform::String^ Bar
+	//	{
+	//		Platform::String^ get();
+	//		void set(Platform::String^ value);
+	//	}
+	//private:
+	//	Platform::String^ m_Foo;
+	//	Platform::String^ m_Bar;
+	//protected:
+	//	virtual void OnPropertyChanged(Platform::String^ propertyName);
+	//	//{
+	//	//	PropertyChanged(this, ref new PropertyChangedEventArgs(propertyName));
+	//	//}
+	//};
 
 
-	[Bindable]
-	public ref class MainViewModel sealed : BindableBase 
-	{
-		property String^ Title
-		{
-			String^ get()
-			{
-				return "MVVM Hello World with Visual C++";
-			}
-		}
+	//[Bindable]
+	//public ref class MainViewModel sealed : BindableBase 
+	//{
+	//	property String^ Title
+	//	{
+	//		String^ get()
+	//		{
+	//			return "MVVM Hello World with Visual C++";
+	//		}
+	//	}
 
-	};
+	//};
+
 
 	//public event PropertyChangedEventHandler PropertyChanged;
 
