@@ -37,7 +37,7 @@ namespace ChartInUWPcpp
 	public ref class DelegateCommand sealed : public ICommand
 	{
 	private:
-		ExecuteDelegate ^ executeDelegate;
+		ExecuteDelegate^ executeDelegate;
 		CanExecuteDelegate^ canExecuteDelegate;
 		bool lastCanExecute;
 
