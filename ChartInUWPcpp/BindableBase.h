@@ -11,54 +11,6 @@ using namespace Windows::UI::Xaml::Interop;
 namespace ChartInUWPcpp 
 {
 
-	public ref class RatingConverter sealed : IValueConverter
-	{
-	public:
-
-		virtual Object^ Convert(Object^ value, TypeName targetType, Object^ parameter, String^ language)
-		{
-			auto boxedInt = dynamic_cast<Box<int>^>(value);
-			auto intValue = boxedInt != nullptr ? boxedInt->Value : 1;
-
-			return "Rating : " + ref new String(std::wstring(intValue, '*').c_str());
-		}
-
-		virtual Object^ ConvertBack(Object^ value, TypeName targetType, Object^ parameter, String^ language)
-		{
-			return value;
-		}
-	};
-
-
-	public delegate void ExecuteDelegate(Object^ parameter);
-	public delegate bool CanExecuteDelegate(Object^ parameter);
-
-	[WebHostHidden]
-	public ref class DelegateCommand sealed : public ICommand
-	{
-	private:
-		ExecuteDelegate^ executeDelegate;
-		CanExecuteDelegate^ canExecuteDelegate;
-		bool lastCanExecute;
-
-	public:
-		DelegateCommand(ExecuteDelegate^ execute, CanExecuteDelegate^ canExecute);
-
-		virtual event EventHandler<Object^>^ CanExecuteChanged;
-		virtual void Execute(Object^ parameter);
-		virtual bool CanExecute(Object^ parameter);
-	};
-
-	[WebHostHidden]
-	public ref class BindableBase : DependencyObject, INotifyPropertyChanged
-	{
-	public:
-		virtual event PropertyChangedEventHandler^ PropertyChanged;
-
-	protected:
-		virtual void OnPropertyChanged(String^ propertyName);
-	};
-
 
 	//public delegate void PropertyChangedEventHandler();
 

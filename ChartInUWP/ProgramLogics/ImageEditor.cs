@@ -15,6 +15,7 @@ using System;
 using ChartWRCLibrary;
 using System.Linq;
 using System.Diagnostics;
+using ChartWRCLibrary.Converter;
 
 namespace ChartInUWP
 {
@@ -31,6 +32,7 @@ namespace ChartInUWP
     ImageService _imageService; // render image
     FftHelper _fourierHelp;
     Class1 _class1;
+    RatingConverter _converter;
 
     #endregion Fields
 

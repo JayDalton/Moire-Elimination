@@ -8,6 +8,12 @@
     <Filter Include="Source">
       <UniqueIdentifier>{2c941807-0cc2-4fba-83b3-cdb8a002702b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Converters">
+      <UniqueIdentifier>{2dba71a2-342d-49de-9dac-578fb46b3137}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Commands">
+      <UniqueIdentifier>{c5b22f4b-f662-4fb2-98d0-141dd3931b77}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -17,6 +23,10 @@
     <ClCompile Include="FftHelper.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="RatingConverter.hpp">
+      <Filter>Converters</Filter>
+    </ClCompile>
+    <ClCompile Include="BindableBase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -25,6 +35,12 @@
     </ClInclude>
     <ClInclude Include="FftHelper.hpp">
       <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="TestConverter.hpp">
+      <Filter>Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="DelegateCommand.hpp">
+      <Filter>Commands</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
