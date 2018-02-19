@@ -14,6 +14,9 @@
     <Filter Include="Fourier">
       <UniqueIdentifier>{2c941807-0cc2-4fba-83b3-cdb8a002702b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dicom">
+      <UniqueIdentifier>{97dce6d3-8761-4fa3-bad6-dfbdc31114ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -27,6 +30,9 @@
       <Filter>Converters</Filter>
     </ClCompile>
     <ClCompile Include="BindableBase.cpp" />
+    <ClCompile Include="DicomService.cpp">
+      <Filter>Dicom</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -41,6 +47,9 @@
     </ClInclude>
     <ClInclude Include="DelegateCommand.hpp">
       <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="DicomService.hpp">
+      <Filter>Dicom</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
