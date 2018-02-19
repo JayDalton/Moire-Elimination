@@ -20,81 +20,84 @@ using namespace Windows::UI::Core;
 
 namespace ChartWRCLibrary
 {
-	public delegate void FourierCalcHandler(int result);
+	namespace Fourier {
 
-	public ref class FftHelper sealed 
-	{
-	private:
-		FftRealPair* m_fourier;
-	public:
-		FftHelper();
-		event FourierCalcHandler^ fourierEvent;
-		IVectorView<IVector<float64>^>^ SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data);
-		IMapView<String^, int>^ GetMap();
-	};
+		public delegate void FourierCalcHandler(int result);
 
-	public value struct ImageMatrix {
-		int Cols;
-		int Rows;
-		//std::vector<int> Data;
-	};
+		public ref class FftHelper sealed 
+		{
+		private:
+			FftRealPair* m_fourier;
+		public:
+			FftHelper();
+			event FourierCalcHandler^ fourierEvent;
+			IVectorView<IVector<float64>^>^ SetContent(uint32 rows, uint32 cols, IVector<uint16>^ data);
+			IMapView<String^, int>^ GetMap();
+		};
 
-	public value struct MyStruct
-	{
-		Platform::String^ Name;
-		int Number;
-		double Avarage;
-	};
+		public value struct ImageMatrix {
+			int Cols;
+			int Rows;
+			//std::vector<int> Data;
+		};
 
-	public delegate void PrimeFoundHandler(int result);
+		public value struct MyStruct
+		{
+			Platform::String^ Name;
+			int Number;
+			double Avarage;
+		};
 
-	public ref class Class1 sealed
-    {
+		public delegate void PrimeFoundHandler(int result);
+
+		public ref class Class1 sealed
+		{
 	
-	private:
-		MyStruct m_struct;
-		bool is_prime(int n);
-		Windows::UI::Core::CoreDispatcher^ m_dispatcher;
+		private:
+			MyStruct m_struct;
+			bool is_prime(int n);
+			Windows::UI::Core::CoreDispatcher^ m_dispatcher;
 	
-	public:
-		Class1();
+		public:
+			Class1();
 
-		// Synchronous method.
-		IVector<double>^  ComputeResult(double input);
+			// Synchronous method.
+			IVector<double>^  ComputeResult(double input);
 
-		// Asynchronous methods
-		IAsyncOperationWithProgress<IVector<int>^, double>^ GetPrimesOrdered(int first, int last);
-		IAsyncActionWithProgress<double>^ GetPrimesUnordered(int first, int last);
+			// Asynchronous methods
+			IAsyncOperationWithProgress<IVector<int>^, double>^ GetPrimesOrdered(int first, int last);
+			IAsyncActionWithProgress<double>^ GetPrimesUnordered(int first, int last);
 
-		// Event whose type is a delegate "class"
-		event PrimeFoundHandler^ primeFoundEvent;		
+			// Event whose type is a delegate "class"
+			event PrimeFoundHandler^ primeFoundEvent;		
 		
-		// samples
-		double LogCalc(double input) {
-			return std::log(input);
-		}
+			// samples
+			double LogCalc(double input) {
+				return std::log(input);
+			}
 
-		property MyStruct Structur {
-			MyStruct get() { return m_struct; }
-			void set(MyStruct _struct) { m_struct = _struct; }
-		}
+			property MyStruct Structur {
+				MyStruct get() { return m_struct; }
+				void set(MyStruct _struct) { m_struct = _struct; }
+			}
 
-		IMap<int, Platform::String^> ^GetMap(void) 
-		{
-			IMap<int, Platform::String^> ^result = ref new Map<int, Platform::String^>;
-			result->Insert(1, "Hello");
-			result->Insert(2, " ");
-			result->Insert(3, "Wolrd");
-			result->Insert(4, "!");
+			IMap<int, Platform::String^> ^GetMap(void) 
+			{
+				IMap<int, Platform::String^> ^result = ref new Map<int, Platform::String^>;
+				result->Insert(1, "Hello");
+				result->Insert(2, " ");
+				result->Insert(3, "Wolrd");
+				result->Insert(4, "!");
 
-			return result;
-		}
+				return result;
+			}
 
-		IVector<int> ^SortVector(IVector<int> ^vec) 
-		{
-			std::sort(begin(vec), end(vec));
-			return vec;
-		}
-    };
+			IVector<int> ^SortVector(IVector<int> ^vec) 
+			{
+				std::sort(begin(vec), end(vec));
+				return vec;
+			}
+		};
 
+	}
 }

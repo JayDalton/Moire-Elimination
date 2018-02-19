@@ -5,23 +5,23 @@
       <UniqueIdentifier>c937a48f-d89b-47b2-ad2a-8c90e3d84f4a</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source">
-      <UniqueIdentifier>{2c941807-0cc2-4fba-83b3-cdb8a002702b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Converters">
       <UniqueIdentifier>{2dba71a2-342d-49de-9dac-578fb46b3137}</UniqueIdentifier>
     </Filter>
     <Filter Include="Commands">
       <UniqueIdentifier>{c5b22f4b-f662-4fb2-98d0-141dd3931b77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fourier">
+      <UniqueIdentifier>{2c941807-0cc2-4fba-83b3-cdb8a002702b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Source\FftRealPair.cpp">
-      <Filter>Source</Filter>
+      <Filter>Fourier</Filter>
     </ClCompile>
     <ClCompile Include="FftHelper.cpp">
-      <Filter>Source</Filter>
+      <Filter>Fourier</Filter>
     </ClCompile>
     <ClCompile Include="RatingConverter.hpp">
       <Filter>Converters</Filter>
@@ -31,10 +31,10 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Source\FftRealPair.hpp">
-      <Filter>Source</Filter>
+      <Filter>Fourier</Filter>
     </ClInclude>
     <ClInclude Include="FftHelper.hpp">
-      <Filter>Source</Filter>
+      <Filter>Fourier</Filter>
     </ClInclude>
     <ClInclude Include="TestConverter.hpp">
       <Filter>Converters</Filter>

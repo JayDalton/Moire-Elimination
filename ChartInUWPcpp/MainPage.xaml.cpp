@@ -19,9 +19,21 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 
+using namespace Windows::Storage::Pickers;
+
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 MainPage::MainPage()
 {
 	InitializeComponent();
+
+	auto openPicker = ref new FileOpenPicker();
+	openPicker->ViewMode = PickerViewMode::List;
+	openPicker->SuggestedStartLocation = PickerLocationId::ComputerFolder;
+	openPicker->FileTypeFilter->Append("*");
+
+	//picker->FileTypeFilter::Add("*");
+
+	//StorageFile file = await picker.PickSingleFileAsync();
+
 }

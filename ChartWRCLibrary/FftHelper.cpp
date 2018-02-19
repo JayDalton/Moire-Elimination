@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "FftHelper.hpp"
 
-using namespace ChartWRCLibrary;
+using namespace ChartWRCLibrary::Fourier;
 
 FftHelper::FftHelper(void)
 {

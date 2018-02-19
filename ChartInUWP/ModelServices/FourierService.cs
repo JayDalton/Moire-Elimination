@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using ChartInUWP.Interfaces;
-using ChartWRCLibrary;
+using ChartWRCLibrary.Fourier;
 
 namespace ChartInUWP.ModelServices
 {
