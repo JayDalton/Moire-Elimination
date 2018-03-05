@@ -7,12 +7,6 @@ DicomHelper::DicomHelper()
 }
 
 
-DicomHelper::~DicomHelper()
-{
-}
-
-
-
 std::vector<double> DicomHelper::GetFileData(const std::string filename)
 {
 	reader.SetFileName(filename.c_str());

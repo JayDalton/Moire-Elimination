@@ -18,7 +18,6 @@ private:
 
 public:
 	DicomHelper();
-	~DicomHelper();
 
 	std::vector<double> GetFileData(const std::string filePath);
 
