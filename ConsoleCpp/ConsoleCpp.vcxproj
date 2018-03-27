@@ -148,6 +148,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ImageFourier.hpp" />
+    <ClInclude Include="ImageMemory.hpp" />
+    <ClInclude Include="ImageFile.hpp" />
+    <ClInclude Include="ImageComplex.hpp" />
+    <ClInclude Include="AppTypes.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
