@@ -1,5 +1,14 @@
 #pragma once
 
+#include <algorithm>
+#include <numeric>
+#include <complex>
+#include <vector>
+#include <iterator>
+#include <iostream>
+#include <valarray>
+#include <cmath>
+
 using Pixel16 = uint16_t;
 using Pixel32 = uint32_t;
 using Pixel64 = uint64_t;
@@ -27,3 +36,43 @@ public:
 	}
 };
 
+template <typename F, typename ...Args>
+auto timer(F f, std::string const &label, Args && ...args) 
+{
+	using namespace std::chrono;
+
+	auto start = high_resolution_clock::now();
+	auto holder = f(std::forward<Args>(args)...);
+	auto stop = high_resolution_clock::now();
+	std::cout << label << " time: " << duration_cast<nanoseconds>(stop - start).count() << "\n";
+
+	return holder;
+}
+
+class num_iterator 
+{
+public:
+	explicit num_iterator(std::size_t position) : i(position) {}
+	std::size_t operator*() const { return i; }
+	num_iterator& operator++() {
+		++i;
+		return *this;
+	}
+	bool operator!=(const num_iterator& other) const {
+		return i != other.i;
+	}
+	bool operator==(const num_iterator& other) const {
+		return !(*this != other);
+	}
+private:
+	std::size_t i;
+
+};
+
+namespace std {
+	template <>
+	struct iterator_traits<num_iterator> {
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = std::size_t;
+	};
+}
