@@ -11,11 +11,10 @@
 #include <cassert>
 
 #include "AppTypes.hpp"
-#include "ImageMemory.hpp"
+#include "NumberIterator.hpp"
+#include "ImageFile.hpp"
 
 using ImageFilePtr = std::unique_ptr<ImageFile>;
-using ComplexImage = ComplexCollection<Complex32>;
-using ComplexMatrix = std::vector<ComplexImage>;
 
 class ImageComplex {
 public:
@@ -26,25 +25,28 @@ public:
 	auto ReadFromImageFileNew(ImageFilePtr file);
 	auto WriteToImageFileNew(ImageFilePtr file);
 
-	auto TransformFourier(std::size_t row, ComplexImage& line, bool back);
-	auto TransformLineById(const std::size_t const row, const ComplexImage& line);
+	auto& GetLineByRow(const std::size_t row) const;
+
+	auto TransformFourier(std::size_t row, bool back);
+
+	auto GetNumberOfRows() const { return rows; }
+	auto GetNumberOfColumns() const { return cols; }
 
 private:
 	ComplexImage complexImage;
 	ComplexMatrix complexMatrix;
+	ComplexMatrix fourierMatrix;
 
 	const float PI = 3.14159265358979323846;
+
+	std::size_t rows{ 0 };
+	std::size_t cols{ 0 };
 };
 
-auto ImageComplex::TransformLineById(const std::size_t const row, const ComplexImage& line)
+auto ImageComplex::TransformFourier(std::size_t row, bool back = false)
 {
-}
-
-auto ImageComplex::TransformFourier(std::size_t row, ComplexImage& line, bool back = false)
-{
-	auto s = complexImage;
-
-	ComplexImage t(s.begin(), s.begin());
+	auto& s = complexMatrix.at(row);
+	ComplexImage result(s.begin(), s.begin());
 
 	const float pol{ 2.0f * PI * (back ? -1.0f : 1.0f) };
 	const float div{ back ? 1.0f : float(s.size()) };
@@ -58,23 +60,28 @@ auto ImageComplex::TransformFourier(std::size_t row, ComplexImage& line, bool ba
 	auto to_ft([=, &s](std::size_t j) 
 	{
 		return std::accumulate(
-			num_iterator(0), 
+			num_iterator{ 0 },
 			num_iterator( s.size() ), 
 			Complex32{},
 			sum_up(j))
 		/ div;
 	});
 
-	std::transform(num_iterator{ 0 }, num_iterator{ s.size() }, std::begin(t), to_ft);
+	std::transform(num_iterator{ 0 }, num_iterator{ s.size() }, std::begin(result), to_ft);
 
-	complexMatrix.push_back(t);
-	return t;
+	fourierMatrix.insert({row, result});
+	return result;
+}
+
+auto& ImageComplex::GetLineByRow(const std::size_t row) const
+{
+	return complexMatrix.at(row);
 }
 
 auto ImageComplex::ReadFromImageFileNew(ImageFilePtr file)
 {
-	auto rows{ file->GetRows() };
-	auto cols{ file->GetCols() };
+	rows = file->GetRows();
+	cols = file->GetCols();
 	auto content = file->ReadFromFileSystem<Pixel16>(rows, cols);
 	assert(rows * cols == content.size());
 
@@ -92,7 +99,7 @@ auto ImageComplex::ReadFromImageFileNew(ImageFilePtr file)
 			[scale](Pixel16 p) -> Complex32 { return Complex32(p * scale); }
 		);
 
-		complexMatrix.push_back(complexLine);
+		complexMatrix.insert({ row, complexLine });
 	}
 
 	return file;
@@ -126,14 +133,12 @@ auto ImageComplex::WriteToImageFileNew(ImageFilePtr file)
 	result.reserve(complexMatrix.size() * complexMatrix.size());
 	constexpr PixelF32 scale = std::numeric_limits<Pixel16>::max();
 
-	for (const auto& row : complexMatrix)
+	for (const auto& [row, line] : complexMatrix)
 	{
-		std::transform(std::begin(row), std::end(row), std::back_inserter(result),
+		std::transform(std::begin(line), std::end(line), std::back_inserter(result),
 			[scale](Complex32 c) -> Pixel16 {return static_cast<Pixel16>(c.real() * scale); }
 		);
-
 	}
-
 
 	file->WriteToFileSystem<Pixel16>(result);
 

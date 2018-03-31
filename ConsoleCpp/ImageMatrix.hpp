@@ -9,7 +9,6 @@
 #include <valarray>
 #include <cmath>
 
-
 #include "AppTypes.hpp"
 #include "ImageFile.hpp"
 #include "ImageComplex.hpp"
@@ -24,12 +23,16 @@ public:
 	auto WriteToImageFile(ImageComplexPtr image);
 
 private:
-	ComplexMatrix complexImageMatrix;
+	ComplexMatrix complexMatrix;
 
 };
 
-ImageMatrix::ImageMatrix()
+auto ImageMatrix::ReadFromImageFile(ImageComplexPtr image)
 {
+	image->GetNumberOfRows();
 }
 
+auto ImageMatrix::WriteToImageFile(ImageComplexPtr image)
+{
 
+}

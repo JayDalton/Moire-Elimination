@@ -8,6 +8,7 @@
 #include <iostream>
 #include <valarray>
 #include <cmath>
+#include <map>
 
 using Pixel16 = uint16_t;
 using Pixel32 = uint32_t;
@@ -24,7 +25,7 @@ using Complex64 = std::complex<double>;
 template<class ComplexType> using ComplexCollection = std::vector<ComplexType>;
 
 using ComplexImage = ComplexCollection<Complex32>;
-using ComplexMatrix = std::vector<ComplexImage>;
+using ComplexMatrix = std::map<std::size_t, ComplexImage>;
 
 
 template<typename Type>
@@ -53,30 +54,32 @@ auto timer(F f, std::string const &label, Args && ...args)
 	return holder;
 }
 
-class num_iterator 
+template <typename Type>
+auto TransformFourier(const Type& s, bool back = false)
 {
-public:
-	explicit num_iterator(std::size_t position) : i(position) {}
-	std::size_t operator*() const { return i; }
-	num_iterator& operator++() {
-		++i;
-		return *this;
-	}
-	bool operator!=(const num_iterator& other) const {
-		return i != other.i;
-	}
-	bool operator==(const num_iterator& other) const {
-		return !(*this != other);
-	}
-private:
-	std::size_t i;
+	ComplexImage result(s.begin(), s.end());
 
-};
+	const float PI = 3.14159265358979323846;
+	const float pol{ 2.0f * PI * (back ? -1.0f : 1.0f) };
+	const float div{ back ? 1.0f : float(s.size()) };
 
-namespace std {
-	template <>
-	struct iterator_traits<num_iterator> {
-		using iterator_category = std::forward_iterator_tag;
-		using value_type = std::size_t;
-	};
+	auto sum_up([=, &s](std::size_t j) {
+		return[=, &s](Complex32 c, std::size_t k) {
+			return c + s[k] * std::polar<float>(1.0f, pol * k * j / float(s.size()));
+		};
+	});
+
+	auto to_ft([=, &s](std::size_t j)
+	{
+		return std::accumulate(
+			num_iterator{ 0 },
+			num_iterator(s.size()),
+			Complex32{},
+			sum_up(j))
+			/ div;
+	});
+
+	std::transform(num_iterator{ 0 }, num_iterator{ s.size() }, std::begin(result), to_ft);
+
+	return result;
 }
