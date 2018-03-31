@@ -16,20 +16,24 @@
 
 using ImageComplexPtr = std::unique_ptr<ImageComplex>;
 
-class ImageMatrix
+class ComplexFourier
 {
 public:
-	ImageMatrix() = default;
-	auto ReadFromImageFile(ImageComplexPtr image);
-	auto WriteToImageFile(ImageComplexPtr image);
+	ComplexFourier() = default;
+	auto ReadFromImageComplex(ImageComplexPtr image);
+	auto WriteToImageComplex(ImageComplexPtr image);
 
 private:
 	ComplexMatrix complexImageMatrix;
 
 };
 
-ImageMatrix::ImageMatrix()
+auto ComplexFourier::ReadFromImageComplex(ImageComplexPtr image)
 {
+
 }
 
+auto ComplexFourier::WriteToImageComplex(ImageComplexPtr image)
+{
 
+}

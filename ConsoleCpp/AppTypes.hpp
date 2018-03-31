@@ -23,6 +23,10 @@ using Complex32 = std::complex<float>;
 using Complex64 = std::complex<double>;
 template<class ComplexType> using ComplexCollection = std::vector<ComplexType>;
 
+using ComplexImage = ComplexCollection<Complex32>;
+using ComplexMatrix = std::vector<ComplexImage>;
+
+
 template<typename Type>
 Type saturate_cast(Type val) {
 	return std::min(std::max(val, std::numeric_limits<Type>::min()), std::numeric_limits<Type>::max());

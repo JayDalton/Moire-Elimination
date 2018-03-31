@@ -8,40 +8,43 @@
 #include <iostream>
 #include <valarray>
 #include <cmath>
-
+#include <cassert>
 
 #include "AppTypes.hpp"
 #include "ImageMemory.hpp"
 
 using ImageFilePtr = std::unique_ptr<ImageFile>;
-using ImageComplexLine = ComplexCollection<Complex32>;
-using ImageComplexMatrix = std::vector<ImageComplexLine>;
+using ComplexImage = ComplexCollection<Complex32>;
+using ComplexMatrix = std::vector<ComplexImage>;
 
 class ImageComplex {
 public:
 	ImageComplex() = default;
-	auto ReadFromImageFile(ImageFilePtr file);
-	auto WriteToImageFile(ImageFilePtr file);
-	auto TransformFourier(std::size_t row, ImageComplexLine& line, bool back);
 
-	auto TransformLineById(const std::size_t const row, const ImageComplexLine& line);
+	auto ReadFromImageFileOld(ImageFilePtr file);
+	auto WriteToImageFileOld(ImageFilePtr file);
+	auto ReadFromImageFileNew(ImageFilePtr file);
+	auto WriteToImageFileNew(ImageFilePtr file);
+
+	auto TransformFourier(std::size_t row, ComplexImage& line, bool back);
+	auto TransformLineById(const std::size_t const row, const ComplexImage& line);
 
 private:
-	ImageComplexLine imageComplexLine;
-	ImageComplexMatrix complexImageMatrix;
+	ComplexImage complexImage;
+	ComplexMatrix complexMatrix;
 
 	const float PI = 3.14159265358979323846;
 };
 
-auto ImageComplex::TransformLineById(const std::size_t const row, const ImageComplexLine& line)
+auto ImageComplex::TransformLineById(const std::size_t const row, const ComplexImage& line)
 {
 }
 
-auto ImageComplex::TransformFourier(std::size_t row, ImageComplexLine& line, bool back = false)
+auto ImageComplex::TransformFourier(std::size_t row, ComplexImage& line, bool back = false)
 {
-	auto s = imageComplexLine;
+	auto s = complexImage;
 
-	ImageComplexLine t(s.begin(), s.begin());
+	ComplexImage t(s.begin(), s.begin());
 
 	const float pol{ 2.0f * PI * (back ? -1.0f : 1.0f) };
 	const float div{ back ? 1.0f : float(s.size()) };
@@ -64,22 +67,49 @@ auto ImageComplex::TransformFourier(std::size_t row, ImageComplexLine& line, boo
 
 	std::transform(num_iterator{ 0 }, num_iterator{ s.size() }, std::begin(t), to_ft);
 
-	complexImageMatrix.push_back(t);
+	complexMatrix.push_back(t);
 	return t;
 }
 
-auto ImageComplex::ReadFromImageFile(ImageFilePtr file)
+auto ImageComplex::ReadFromImageFileNew(ImageFilePtr file)
+{
+	auto rows{ file->GetRows() };
+	auto cols{ file->GetCols() };
+	auto content = file->ReadFromFileSystem<Pixel16>(rows, cols);
+	assert(rows * cols == content.size());
+
+	constexpr PixelF32 scale = 1.0f / std::numeric_limits<Pixel16>::max();
+
+	for (size_t row = 0; row < rows; row++)
+	{
+		ComplexImage complexLine;
+		complexLine.reserve(cols);
+
+		auto rangeStart = std::begin(content) + (row * cols);
+		auto rangeEnd = std::begin(content) + (row * cols) + cols;
+
+		std::transform(rangeStart, rangeEnd, std::back_inserter(complexLine),
+			[scale](Pixel16 p) -> Complex32 { return Complex32(p * scale); }
+		);
+
+		complexMatrix.push_back(complexLine);
+	}
+
+	return file;
+}
+
+auto ImageComplex::ReadFromImageFileOld(ImageFilePtr file)
 {
 	auto rows{ file->GetRows() };
 	auto cols{ file->GetCols() };
 	auto content = file->ReadFromFileSystem<Pixel16>(rows, cols);
 
-	imageComplexLine.reserve(content.size());
+	complexImage.reserve(content.size());
 	constexpr PixelF32 scale = 1.0f / std::numeric_limits<Pixel16>::max();
 
 	auto start = std::chrono::high_resolution_clock::now();
 	{
-		std::transform(std::begin(content), std::end(content), std::back_inserter(imageComplexLine),
+		std::transform(std::begin(content), std::end(content), std::back_inserter(complexImage),
 			[scale](Pixel16 p) -> Complex32 { return Complex32(p * scale); }
 		);
 	}
@@ -90,16 +120,36 @@ auto ImageComplex::ReadFromImageFile(ImageFilePtr file)
 	return file;
 }
 
-auto ImageComplex::WriteToImageFile(ImageFilePtr file)
+auto ImageComplex::WriteToImageFileNew(ImageFilePtr file)
+{
+	PixelCollection<Pixel16> result;
+	result.reserve(complexMatrix.size() * complexMatrix.size());
+	constexpr PixelF32 scale = std::numeric_limits<Pixel16>::max();
+
+	for (const auto& row : complexMatrix)
+	{
+		std::transform(std::begin(row), std::end(row), std::back_inserter(result),
+			[scale](Complex32 c) -> Pixel16 {return static_cast<Pixel16>(c.real() * scale); }
+		);
+
+	}
+
+
+	file->WriteToFileSystem<Pixel16>(result);
+
+	return file;
+}
+
+auto ImageComplex::WriteToImageFileOld(ImageFilePtr file)
 {
 	auto content{ std::vector<Pixel16>() };
 
-	content.reserve(imageComplexLine.size());
+	content.reserve(complexImage.size());
 	constexpr PixelF32 scale = std::numeric_limits<Pixel16>::max();
 
 	auto start = std::chrono::high_resolution_clock::now();
 	{
-		std::transform(std::begin(imageComplexLine), std::end(imageComplexLine), std::back_inserter(content),
+		std::transform(std::begin(complexImage), std::end(complexImage), std::back_inserter(content),
 			[scale](Complex32 c) -> Pixel16 {return static_cast<Pixel16>(c.real() * scale); }
 		);
 	}

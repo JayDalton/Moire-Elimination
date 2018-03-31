@@ -1,10 +1,9 @@
 #pragma once
 
+#include <cassert>
 #include <filesystem>
 
 #include "AppTypes.hpp"
-#include "ImageMemory.hpp"
-
 
 class ImageFile
 {
@@ -21,9 +20,6 @@ public:
 
 	template<class PixelType> auto ReadFromFileSystem(std::size_t rows, std::size_t cols);
 	template<class PixelType> auto WriteToFileSystem(const std::vector<PixelType>& collection);
-
-	//template<class PixelType> auto ReadFromMemory();
-	//template<class PixelType> auto WriteToMemory();
 
 private:
 	std::string fileName;
@@ -54,22 +50,16 @@ auto ImageFile::ReadFromFileSystem(std::size_t rows, std::size_t cols)
 {
 	std::ifstream file(fileName, std::ios::binary);
 
-	// Stop eating new lines in binary mode!!!
-	file.unsetf(std::ios::skipws);
-
 	file.seekg(0, std::ios::end);
 	auto fileSize = file.tellg();
 	file.seekg(0, std::ios::beg);
 
-	auto length = fileSize / sizeof(PixelType);
+	assert(0 == fileSize % sizeof(PixelType));
+	std::size_t number = fileSize / sizeof(PixelType);
+	assert(rows * cols == number);
 
-	std::vector<PixelType> content;
-
-	if (0 == (fileSize % sizeof(PixelType)) && rows * cols == length)
-	{
-		content.resize(length);
-		file.read(reinterpret_cast<char*>(content.data()), content.size() * sizeof(PixelType));
-	}
+	PixelCollection<PixelType> content(number);
+	file.read(reinterpret_cast<char*>(content.data()), content.size() * sizeof(PixelType));
 
 	return content;
 }
