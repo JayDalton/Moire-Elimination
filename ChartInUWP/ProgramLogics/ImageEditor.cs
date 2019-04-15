@@ -1,27 +1,22 @@
-﻿using ChartInUWP.Models;
-using ChartInUWP.ModelServices;
+﻿using ChartInUWP.ModelServices;
+using ChartInUWP.Interfaces;
+using ChartWRCLibrary.Fourier;
+using ChartWRCLibrary.Converter;
 using System.Threading.Tasks;
 using Windows.Storage;
-using Windows.UI.Xaml.Media;
 using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
-using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI;
-using ChartInUWP.Interfaces;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using System.Collections.Concurrent;
 using System;
-using ChartWRCLibrary;
 using System.Linq;
 using System.Diagnostics;
 
 namespace ChartInUWP
 {
-  /// <summary>
-  /// Program logic, holding pixeldata and manage pixelimage and pixelgraph
-  /// </summary>
-  public class ImageEditor
+    /// <summary>
+    /// Program logic, holding pixeldata and manage pixelimage and pixelgraph
+    /// </summary>
+    public class ImageEditor
   {
     #region Fields
 
@@ -31,6 +26,7 @@ namespace ChartInUWP
     ImageService _imageService; // render image
     FftHelper _fourierHelp;
     Class1 _class1;
+    RatingConverter _converter;
 
     #endregion Fields
 
